@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 
 class SessionManager(context: Context) {
     private val prefs: SharedPreferences =
-        context.getSharedPreferences("shipu_ai_session_prefs", Context.MODE_PRIVATE)
+        context.applicationContext.getSharedPreferences("shipu_ai_session_prefs", Context.MODE_PRIVATE)
 
     companion object {
         private const val KEY_USER_ID = "active_user_id"

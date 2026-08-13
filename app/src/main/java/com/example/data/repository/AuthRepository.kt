@@ -1,5 +1,6 @@
 package com.example.data.repository
 
+import android.content.Context
 import android.util.Log
 import com.example.data.local.SessionManager
 import com.example.data.local.db.AppDatabase
@@ -20,8 +21,9 @@ sealed class AuthResult<out T> {
 
 class AuthRepository(
     private val sessionManager: SessionManager,
-    private val db: AppDatabase = AppDatabase.getInstance()
+    context: Context? = null
 ) {
+    private val db: AppDatabase by lazy { AppDatabase.getInstance(context) }
 
     suspend fun signUp(email: String, password: String, name: String): AuthResult<User> = withContext(Dispatchers.IO) {
         try {

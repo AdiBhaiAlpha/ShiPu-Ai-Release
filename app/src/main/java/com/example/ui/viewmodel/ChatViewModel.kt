@@ -33,8 +33,8 @@ data class ChatUiState(
 )
 
 class ChatViewModel(application: Application) : AndroidViewModel(application) {
-    private val chatRepository = ChatRepository()
-    private val memoryRepository = MemoryRepository()
+    private val chatRepository by lazy { ChatRepository(context = application) }
+    private val memoryRepository by lazy { MemoryRepository(context = application) }
 
     private val _uiState = MutableStateFlow(ChatUiState())
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()

@@ -1,6 +1,7 @@
 package com.example
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -36,9 +37,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        Log.d("ShiPuAi_Startup", "STARTUP: MainActivity.onCreate BEGIN")
         enableEdgeToEdge()
 
         setContent {
+            Log.d("ShiPuAi_Startup", "STARTUP: Compose content BEGIN")
             val authUiState by authViewModel.uiState.collectAsStateWithLifecycle()
             val chatUiState by chatViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -47,7 +50,10 @@ class MainActivity : ComponentActivity() {
             // Initialize chat user session when authenticated
             LaunchedEffect(authUiState.isAuthenticated, authUiState.userId) {
                 if (authUiState.isAuthenticated && authUiState.userId != null) {
+                    Log.d("ShiPuAi_Startup", "STARTUP: Auth state authenticated for ${authUiState.userId}")
                     chatViewModel.initUser(authUiState.userId!!)
+                } else if (!authUiState.isLoading) {
+                    Log.d("ShiPuAi_Startup", "STARTUP: Auth state unauthenticated")
                 }
             }
 
@@ -90,3 +96,4 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+

@@ -18,8 +18,12 @@ class OpenRouterClient {
     private val OPENROUTER_API_KEY: String
         get() = try {
             String(android.util.Base64.decode(ENCODED_KEY, android.util.Base64.DEFAULT), Charsets.UTF_8)
-        } catch (e: Exception) {
-            ""
+        } catch (e: Throwable) {
+            try {
+                String(java.util.Base64.getDecoder().decode(ENCODED_KEY), Charsets.UTF_8)
+            } catch (e2: Throwable) {
+                ""
+            }
         }
     private val API_URL = "https://openrouter.ai/api/v1/chat/completions"
 

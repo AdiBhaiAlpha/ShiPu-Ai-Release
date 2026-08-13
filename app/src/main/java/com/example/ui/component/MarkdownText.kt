@@ -116,6 +116,10 @@ sealed class MarkdownBlock {
 
 data class ListItem(val text: String, val isOrdered: Boolean, val number: Int = 1, val indentLevel: Int = 0)
 
+private val REGEX_ORDERED_LIST = Regex("""^\d+\.\s.*""")
+private val REGEX_ORDERED_LIST_NUM = Regex("""^(\d+)\.""")
+private val REGEX_ORDERED_LIST_SPLIT = Regex("""^\d+\.\s""")
+
 private fun parseMarkdown(rawText: String): List<MarkdownBlock> {
     val blocks = mutableListOf<MarkdownBlock>()
     val lines = rawText.lines()
@@ -192,7 +196,7 @@ private fun parseMarkdown(rawText: String): List<MarkdownBlock> {
 
         // 6. Lists
         val isUnordered = trimmed.startsWith("- ") || trimmed.startsWith("* ") || trimmed.startsWith("+ ")
-        val isOrdered = trimmed.matches(Regex("""^\d+\.\s.*"""))
+        val isOrdered = trimmed.matches(REGEX_ORDERED_LIST)
 
         if (isUnordered || isOrdered) {
             val listItems = mutableListOf<ListItem>()
@@ -200,7 +204,7 @@ private fun parseMarkdown(rawText: String): List<MarkdownBlock> {
                 val curLine = lines[i]
                 val curTrimmed = curLine.trim()
                 val isCurUnordered = curTrimmed.startsWith("- ") || curTrimmed.startsWith("* ") || curTrimmed.startsWith("+ ")
-                val isCurOrdered = curTrimmed.matches(Regex("""^\d+\.\s.*"""))
+                val isCurOrdered = curTrimmed.matches(REGEX_ORDERED_LIST)
 
                 if (!isCurUnordered && !isCurOrdered) break
 
@@ -209,8 +213,8 @@ private fun parseMarkdown(rawText: String): List<MarkdownBlock> {
                     val content = curTrimmed.substring(2).trim()
                     listItems.add(ListItem(content, false, indentLevel = indent))
                 } else if (isCurOrdered) {
-                    val parts = curTrimmed.split(Regex("""^\d+\.\s"""), 2)
-                    val numMatch = Regex("""^(\d+)\.""").find(curTrimmed)
+                    val parts = curTrimmed.split(REGEX_ORDERED_LIST_SPLIT, 2)
+                    val numMatch = REGEX_ORDERED_LIST_NUM.find(curTrimmed)
                     val num = numMatch?.groupValues?.get(1)?.toIntOrNull() ?: 1
                     val content = if (parts.size > 1) parts[1].trim() else curTrimmed
                     listItems.add(ListItem(content, true, number = num, indentLevel = indent))
@@ -231,7 +235,7 @@ private fun parseMarkdown(rawText: String): List<MarkdownBlock> {
                 !lines[i].trim().startsWith("|") &&
                 !lines[i].trim().startsWith("- ") &&
                 !lines[i].trim().startsWith("* ") &&
-                !lines[i].trim().matches(Regex("""^\d+\.\s.*"""))
+                !lines[i].trim().matches(REGEX_ORDERED_LIST)
             ) {
                 paragraphBuilder.append(lines[i]).append(" ")
                 i++

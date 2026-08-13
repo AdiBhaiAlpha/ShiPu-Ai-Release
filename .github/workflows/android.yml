@@ -49,11 +49,17 @@ jobs:
           base64 -d debug.keystore.base64 > debug.keystore
         fi
 
-    - name: Build APK with Gradle
-      run: gradle assembleDebug --no-daemon
+    - name: Build APK and AAB with Gradle
+      run: gradle assembleDebug bundleDebug --no-daemon
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: shipu-ai-debug-apk
         path: app/build/outputs/apk/debug/app-debug.apk
+
+    - name: Upload AAB Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: shipu-ai-debug-aab
+        path: app/build/outputs/bundle/debug/app-debug.aab

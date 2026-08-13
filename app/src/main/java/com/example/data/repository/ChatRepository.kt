@@ -1,5 +1,6 @@
 package com.example.data.repository
 
+import android.content.Context
 import android.util.Log
 import com.example.data.local.db.AppDatabase
 import com.example.data.local.db.ConversationEntity
@@ -18,9 +19,10 @@ import java.util.UUID
 
 class ChatRepository(
     private val openRouterClient: OpenRouterClient = OpenRouterClient(),
-    private val memoryRepository: MemoryRepository = MemoryRepository(),
-    private val db: AppDatabase = AppDatabase.getInstance()
+    context: Context? = null
 ) {
+    private val memoryRepository: MemoryRepository by lazy { MemoryRepository(context) }
+    private val db: AppDatabase by lazy { AppDatabase.getInstance(context) }
 
     suspend fun getConversations(userId: String): List<Conversation> = withContext(Dispatchers.IO) {
         try {

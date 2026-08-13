@@ -1,5 +1,6 @@
 package com.example.data.repository
 
+import android.content.Context
 import android.util.Log
 import com.example.data.local.db.AppDatabase
 import com.example.data.local.db.UserMemoryEntity
@@ -9,8 +10,9 @@ import kotlinx.coroutines.withContext
 import java.util.UUID
 
 class MemoryRepository(
-    private val db: AppDatabase = AppDatabase.getInstance()
+    context: Context? = null
 ) {
+    private val db: AppDatabase by lazy { AppDatabase.getInstance(context) }
 
     suspend fun getUserMemories(userId: String): List<UserMemory> = withContext(Dispatchers.IO) {
         try {

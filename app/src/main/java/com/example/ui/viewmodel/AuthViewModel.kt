@@ -1,17 +1,20 @@
 package com.example.ui.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.local.SessionManager
 import com.example.data.model.User
 import com.example.data.repository.AuthRepository
 import com.example.data.repository.AuthResult
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class AuthUiState(
     val isLoading: Boolean = false,
@@ -23,10 +26,10 @@ data class AuthUiState(
 )
 
 class AuthViewModel(application: Application) : AndroidViewModel(application) {
-    private val sessionManager = SessionManager(application)
-    private val authRepository = AuthRepository(sessionManager)
+    private val sessionManager by lazy { SessionManager(application) }
+    private val authRepository by lazy { AuthRepository(sessionManager, application) }
 
-    private val _uiState = MutableStateFlow(AuthUiState())
+    private val _uiState = MutableStateFlow(AuthUiState(isLoading = true))
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
     init {
@@ -34,36 +37,47 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun checkExistingSession() {
-        val userId = sessionManager.getActiveUserId()
-        val name = sessionManager.getActiveUserName()
-        val email = sessionManager.getActiveUserEmail()
+        viewModelScope.launch(Dispatchers.IO) {
+            Log.d("ShiPuAi_Startup", "STARTUP: Session restore BEGIN")
+            val userId = sessionManager.getActiveUserId()
+            val name = sessionManager.getActiveUserName()
+            val email = sessionManager.getActiveUserEmail()
 
-        if (userId != null && email != null) {
-            val user = User(
-                userId = userId,
-                email = email,
-                passwordHash = "",
-                name = name ?: "User"
-            )
-            _uiState.update {
-                it.copy(
-                    isAuthenticated = true,
+            if (userId != null && email != null) {
+                val user = User(
                     userId = userId,
-                    currentUser = user,
-                    isLoading = false
+                    email = email,
+                    passwordHash = "",
+                    name = name ?: "User"
                 )
-            }
-            // Background sync user details from database
-            viewModelScope.launch {
+                withContext(Dispatchers.Main) {
+                    _uiState.update {
+                        it.copy(
+                            isAuthenticated = true,
+                            userId = userId,
+                            currentUser = user,
+                            isLoading = false
+                        )
+                    }
+                }
+                Log.d("ShiPuAi_Startup", "STARTUP: Session restore END (Authenticated)")
+
                 val dbUser = authRepository.getCurrentUser(userId)
                 if (dbUser != null) {
-                    _uiState.update { it.copy(currentUser = dbUser) }
+                    withContext(Dispatchers.Main) {
+                        _uiState.update { it.copy(currentUser = dbUser) }
+                    }
                 } else {
-                    logout()
+                    withContext(Dispatchers.Main) {
+                        logout()
+                    }
+                }
+            } else {
+                Log.d("ShiPuAi_Startup", "STARTUP: Session restore END (Unauthenticated)")
+                withContext(Dispatchers.Main) {
+                    _uiState.update { it.copy(isAuthenticated = false, isLoading = false) }
                 }
             }
-        } else {
-            _uiState.update { it.copy(isAuthenticated = false, isLoading = false) }
         }
     }
 

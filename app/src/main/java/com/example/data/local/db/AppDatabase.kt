@@ -31,10 +31,13 @@ abstract class AppDatabase : RoomDatabase() {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
-        fun getInstance(context: Context = ShiPuAiApplication.instance): AppDatabase {
+        fun getInstance(context: Context? = null): AppDatabase {
             return INSTANCE ?: synchronized(this) {
+                val ctx = context?.applicationContext
+                    ?: (if (ShiPuAiApplication.isInitialized) ShiPuAiApplication.instance.applicationContext else null)
+                    ?: throw IllegalStateException("AppDatabase initialized before Application Context was available")
                 val instance = Room.databaseBuilder(
-                    context.applicationContext,
+                    ctx,
                     AppDatabase::class.java,
                     "shipu_ai_db"
                 )
