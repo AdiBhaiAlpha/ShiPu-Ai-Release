@@ -42,6 +42,13 @@ jobs:
           echo "SUCCESS: Gradle Wrapper JAR is valid."
         fi
 
+    - name: Ensure Debug Keystore
+      run: |
+        if [ -f "debug.keystore.base64" ] && [ ! -f "debug.keystore" ]; then
+          echo "Decoding debug.keystore from base64..."
+          base64 -d debug.keystore.base64 > debug.keystore
+        fi
+
     - name: Build APK with Gradle
       run: gradle assembleDebug --no-daemon
 
