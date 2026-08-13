@@ -1,0 +1,6 @@
+{
+  "name": "ShiPu AI",
+  "description": "Production-ready Personal AI Chat application powered by OpenRouter and MongoDB.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
