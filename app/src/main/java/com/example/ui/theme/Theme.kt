@@ -10,38 +10,44 @@ import androidx.compose.ui.graphics.Color
 private val DarkColorScheme = darkColorScheme(
     primary = BrandAccent,
     onPrimary = Color.White,
-    primaryContainer = DarkSurfaceVariant,
+    primaryContainer = DarkSurfaceElevated,
     onPrimaryContainer = DarkTextPrimary,
     secondary = DarkTextSecondary,
     onSecondary = DarkTextPrimary,
+    secondaryContainer = DarkSurfaceVariant,
+    onSecondaryContainer = DarkTextPrimary,
     background = DarkBgPure,
     onBackground = DarkTextPrimary,
     surface = DarkSurface,
     onSurface = DarkTextPrimary,
     surfaceVariant = DarkSurfaceVariant,
     onSurfaceVariant = DarkTextSecondary,
-    outline = DarkBorderSubtle
+    outline = DarkBorderSubtle,
+    outlineVariant = DarkBorderSubtle.copy(alpha = 0.5f)
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = BrandAccentDark,
     onPrimary = Color.White,
-    primaryContainer = LightSurfaceVariant,
+    primaryContainer = LightSurfaceElevated,
     onPrimaryContainer = LightTextPrimary,
     secondary = LightTextSecondary,
     onSecondary = LightTextPrimary,
+    secondaryContainer = LightSurfaceVariant,
+    onSecondaryContainer = LightTextPrimary,
     background = LightBgPure,
     onBackground = LightTextPrimary,
     surface = LightSurface,
     onSurface = LightTextPrimary,
     surfaceVariant = LightSurfaceVariant,
     onSurfaceVariant = LightTextSecondary,
-    outline = LightBorderSubtle
+    outline = LightBorderSubtle,
+    outlineVariant = LightBorderSubtle.copy(alpha = 0.5f)
 )
 
 @Composable
 fun ShiPuAiTheme(
-    darkTheme: Boolean = false, // Default to clean light SaaS theme
+    darkTheme: Boolean = true, // Default to refined, calm dark-first theme
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
@@ -52,3 +58,4 @@ fun ShiPuAiTheme(
         content = content
     )
 }
+

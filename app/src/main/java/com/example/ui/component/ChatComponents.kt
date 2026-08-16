@@ -24,6 +24,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -33,9 +35,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material.icons.outlined.Lightbulb
 import androidx.compose.material.icons.outlined.MoreHoriz
@@ -67,9 +70,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.R
+import com.shipu.ai.R
 import com.example.data.model.Message
 import com.example.ui.theme.DarkAssistantBubble
 import com.example.ui.theme.DarkUserBubble
@@ -89,7 +93,7 @@ fun ChatMessageItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp, horizontal = 16.dp),
+            .padding(vertical = 6.dp, horizontal = 16.dp),
         horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
     ) {
         if (!isUser) {
@@ -98,16 +102,16 @@ fun ChatMessageItem(
                 modifier = Modifier
                     .size(28.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant),
+                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
                 contentAlignment = Alignment.Center
             ) {
-                androidx.compose.foundation.Image(
-                    painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.ic_shipu_logo),
+                Image(
+                    painter = painterResource(id = R.drawable.ic_shipu_logo),
                     contentDescription = "ShiPu AI Avatar",
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(10.dp))
         }
 
         Column(
@@ -116,10 +120,10 @@ fun ChatMessageItem(
         ) {
             Surface(
                 shape = RoundedCornerShape(
-                    topStart = 16.dp,
-                    topEnd = 16.dp,
-                    bottomStart = if (isUser) 16.dp else 4.dp,
-                    bottomEnd = if (isUser) 4.dp else 16.dp
+                    topStart = 14.dp,
+                    topEnd = 14.dp,
+                    bottomStart = if (isUser) 14.dp else 2.dp,
+                    bottomEnd = if (isUser) 2.dp else 14.dp
                 ),
                 color = when {
                     isUser && isDarkTheme -> DarkUserBubble
@@ -129,12 +133,12 @@ fun ChatMessageItem(
                 },
                 border = BorderStroke(
                     1.dp,
-                    if (isUser) MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                    else MaterialTheme.colorScheme.outline
+                    if (isUser) MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
+                    else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                 ),
                 shadowElevation = 0.dp
             ) {
-                Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                Box(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
                     MarkdownText(
                         markdown = message.content,
                         textColor = MaterialTheme.colorScheme.onSurface
@@ -150,32 +154,32 @@ fun ChatMessageItem(
                 ) {
                     Text(
                         text = formatTimestamp(message.createdAt),
-                        fontSize = 10.sp,
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
-                    Spacer(modifier = Modifier.width(6.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
                     IconButton(
                         onClick = {
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                             val clip = ClipData.newPlainText("ShiPu AI User Message", message.content)
                             clipboard.setPrimaryClip(clip)
-                            Toast.makeText(context, "Copied user message", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier
-                            .size(22.dp)
+                            .size(24.dp)
                             .testTag("copy_user_message_button")
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.ContentCopy,
                             contentDescription = "Copy message",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                             modifier = Modifier.size(12.dp)
                         )
                     }
                 }
             }
 
-            // Message Actions Bar (Copy, Regenerate, Good, Bad, More) for Assistant
+            // Message Actions Bar (Copy, Regenerate, Feedback) for Assistant
             if (!isUser) {
                 Row(
                     modifier = Modifier.padding(top = 4.dp),
@@ -184,7 +188,7 @@ fun ChatMessageItem(
                 ) {
                     Text(
                         text = formatTimestamp(message.createdAt),
-                        fontSize = 10.sp,
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         modifier = Modifier.padding(end = 4.dp)
                     )
@@ -194,7 +198,7 @@ fun ChatMessageItem(
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                             val clip = ClipData.newPlainText("ShiPu AI Response", message.content)
                             clipboard.setPrimaryClip(clip)
-                            Toast.makeText(context, "Message copied to clipboard", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier
                             .size(28.dp)
@@ -203,8 +207,8 @@ fun ChatMessageItem(
                         Icon(
                             imageVector = Icons.Outlined.ContentCopy,
                             contentDescription = "Copy message text",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(14.dp)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                            modifier = Modifier.size(13.dp)
                         )
                     }
 
@@ -218,8 +222,8 @@ fun ChatMessageItem(
                         Icon(
                             imageVector = Icons.Outlined.Refresh,
                             contentDescription = "Regenerate response",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(14.dp)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                            modifier = Modifier.size(13.dp)
                         )
                     }
 
@@ -227,7 +231,7 @@ fun ChatMessageItem(
                     IconButton(
                         onClick = {
                             isLiked = if (isLiked == true) null else true
-                            Toast.makeText(context, if (isLiked == true) "Feedback noted: Good" else "Feedback reset", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, if (isLiked == true) "Feedback: Helpful" else "Feedback reset", Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier
                             .size(28.dp)
@@ -235,9 +239,9 @@ fun ChatMessageItem(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.ThumbUp,
-                            contentDescription = "Good response",
-                            tint = if (isLiked == true) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(14.dp)
+                            contentDescription = "Helpful response",
+                            tint = if (isLiked == true) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                            modifier = Modifier.size(13.dp)
                         )
                     }
 
@@ -245,7 +249,7 @@ fun ChatMessageItem(
                     IconButton(
                         onClick = {
                             isLiked = if (isLiked == false) null else false
-                            Toast.makeText(context, if (isLiked == false) "Feedback noted: Bad" else "Feedback reset", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, if (isLiked == false) "Feedback noted" else "Feedback reset", Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier
                             .size(28.dp)
@@ -253,9 +257,9 @@ fun ChatMessageItem(
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.ThumbDown,
-                            contentDescription = "Bad response",
-                            tint = if (isLiked == false) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(14.dp)
+                            contentDescription = "Unhelpful response",
+                            tint = if (isLiked == false) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                            modifier = Modifier.size(13.dp)
                         )
                     }
 
@@ -265,7 +269,7 @@ fun ChatMessageItem(
                             val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                             val clip = ClipData.newPlainText("ShiPu AI Response", message.content)
                             clipboard.setPrimaryClip(clip)
-                            Toast.makeText(context, "Full message copied to clipboard", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Full message copied", Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier
                             .size(28.dp)
@@ -274,8 +278,8 @@ fun ChatMessageItem(
                         Icon(
                             imageVector = Icons.Outlined.MoreHoriz,
                             contentDescription = "More message options",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(14.dp)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                            modifier = Modifier.size(13.dp)
                         )
                     }
                 }
@@ -283,7 +287,7 @@ fun ChatMessageItem(
         }
 
         if (isUser) {
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(10.dp))
             // User Avatar
             Box(
                 modifier = Modifier
@@ -296,7 +300,7 @@ fun ChatMessageItem(
                     imageVector = Icons.Outlined.Person,
                     contentDescription = "User Avatar",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(16.dp)
+                    modifier = Modifier.size(15.dp)
                 )
             }
         }
@@ -313,17 +317,15 @@ private fun formatTimestamp(timeMillis: Long): String {
     }
 }
 
-
 @Composable
 fun StreamingMessageItem(
     streamingChunk: String,
     isDarkTheme: Boolean
 ) {
-    // Subtle breathing/scale animation while ShiPu AI generates response
     val infiniteTransition = rememberInfiniteTransition(label = "avatar_breathing")
     val scale by infiniteTransition.animateFloat(
-        initialValue = 0.92f,
-        targetValue = 1.08f,
+        initialValue = 0.94f,
+        targetValue = 1.04f,
         animationSpec = infiniteRepeatable(
             animation = tween(800, easing = LinearOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -334,43 +336,43 @@ fun StreamingMessageItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp, horizontal = 16.dp),
+            .padding(vertical = 6.dp, horizontal = 16.dp),
         horizontalArrangement = Arrangement.Start
     ) {
         Box(
             modifier = Modifier
                 .size(28.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant),
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
             contentAlignment = Alignment.Center
         ) {
             Image(
                 painter = painterResource(id = R.drawable.ic_shipu_logo),
                 contentDescription = "ShiPu AI Generating Response",
                 modifier = Modifier
-                    .size(22.dp)
+                    .size(20.dp)
                     .scale(scale)
             )
         }
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(10.dp))
 
         Surface(
             shape = RoundedCornerShape(
-                topStart = 16.dp,
-                topEnd = 16.dp,
-                bottomStart = 4.dp,
-                bottomEnd = 16.dp
+                topStart = 14.dp,
+                topEnd = 14.dp,
+                bottomStart = 2.dp,
+                bottomEnd = 14.dp
             ),
             color = if (isDarkTheme) DarkAssistantBubble else LightAssistantBubble,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
             shadowElevation = 0.dp
         ) {
-            Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            Box(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
                 if (streamingChunk.isEmpty()) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = "ShiPu AI is thinking...",
-                            fontSize = 14.sp,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -386,8 +388,7 @@ fun StreamingMessageItem(
 }
 
 /**
- * Composable function using LazyColumn to display a list of chat messages
- * with distinct styling for user and AI responses.
+ * Composable function using LazyColumn to display chat messages.
  */
 @Composable
 fun ChatMessageList(
@@ -443,32 +444,31 @@ fun EmptyChatView(
     ) {
         Box(
             modifier = Modifier
-                .size(64.dp)
-                .clip(RoundedCornerShape(18.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
+                .size(56.dp)
+                .clip(RoundedCornerShape(14.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
             contentAlignment = Alignment.Center
         ) {
-            androidx.compose.foundation.Image(
-                painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.ic_shipu_logo),
+            Image(
+                painter = painterResource(id = R.drawable.ic_shipu_logo),
                 contentDescription = "ShiPu AI Logo",
-                modifier = Modifier.size(50.dp)
+                modifier = Modifier.size(44.dp)
             )
         }
 
-        Spacer(modifier = Modifier.height(18.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         Text(
             text = "Welcome to ShiPu AI",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
 
         Text(
             text = "Your personal AI workspace with context memory and markdown support.",
-            fontSize = 13.sp,
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 6.dp, bottom = 28.dp)
+            modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
         )
 
         FlowRow(
@@ -481,26 +481,26 @@ fun EmptyChatView(
                     modifier = Modifier
                         .clickable { onPromptSelected(suggestion) }
                         .testTag("suggestion_card"),
-                    shape = RoundedCornerShape(12.dp),
+                    shape = RoundedCornerShape(10.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.surface
                     ),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f))
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Lightbulb,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(15.dp)
                         )
-                        Spacer(modifier = Modifier.width(10.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
                         Text(
                             text = suggestion,
-                            fontSize = 13.sp,
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                     }
@@ -526,7 +526,7 @@ fun ChatInputBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedTextField(
@@ -535,30 +535,33 @@ fun ChatInputBar(
                 placeholder = {
                     Text(
                         "Message ShiPu AI...",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                 },
                 modifier = Modifier
                     .weight(1f)
                     .testTag("chat_input_field"),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(20.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
                     focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                 ),
-                maxLines = 5
+                maxLines = 5,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default)
             )
 
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(8.dp))
 
             if (isStreaming) {
                 IconButton(
                     onClick = onStop,
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary)
                         .testTag("stop_generation_button")
@@ -567,7 +570,7 @@ fun ChatInputBar(
                         imageVector = Icons.Outlined.Stop,
                         contentDescription = "Stop generation",
                         tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             } else {
@@ -576,19 +579,19 @@ fun ChatInputBar(
                     onClick = onSend,
                     enabled = hasText,
                     modifier = Modifier
-                        .size(42.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
                         .background(
                             if (hasText) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.surfaceVariant
+                            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
                         )
                         .testTag("send_message_button")
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
                         contentDescription = "Send message",
-                        tint = if (hasText) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp)
+                        tint = if (hasText) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.size(16.dp)
                     )
                 }
             }

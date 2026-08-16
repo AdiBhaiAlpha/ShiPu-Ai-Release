@@ -1,5 +1,6 @@
 package com.example.ui.screen
 
+import android.util.Log
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
@@ -33,32 +34,34 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.R
+import com.shipu.ai.R
 import kotlinx.coroutines.delay
 
 /**
- * Polished, high-performance startup splash screen using the official ShiPu AI logo.
- * Features a subtle scale and opacity entrance animation, followed by seamless transition
+ * Calm, refined startup splash screen using the canonical ShiPu AI logo.
+ * Features a quiet scale and opacity entrance animation, followed by seamless transition
  * into the main application.
  */
 @Composable
 fun SplashScreen(
     onSplashFinished: () -> Unit
 ) {
-    val scale = remember { Animatable(0.7f) }
+    Log.d("ShiPuAi_Startup", "ShiPuAI_STARTUP_08: SplashScreen rendering BEGIN")
+    val scale = remember { Animatable(0.92f) }
     val alpha = remember { Animatable(0.0f) }
 
     LaunchedEffect(Unit) {
         // Start smooth entrance animation
         alpha.animateTo(
             targetValue = 1.0f,
-            animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing)
+            animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
         )
         scale.animateTo(
             targetValue = 1.0f,
-            animationSpec = tween(durationMillis = 600, easing = FastOutSlowInEasing)
+            animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
         )
-        delay(600) // Brief hold for premium feel
+        delay(500) // Brief hold for calm feel
+        Log.d("ShiPuAi_Startup", "ShiPuAI_STARTUP_09: SplashScreen finished, transitioning to main UI")
         onSplashFinished()
     }
 
@@ -77,53 +80,51 @@ fun SplashScreen(
                 verticalArrangement = Arrangement.Center,
                 modifier = Modifier.padding(24.dp)
             ) {
-                // Official ShiPu AI Logo Asset
+                // Canonical ShiPu AI Logo Asset
                 Box(
                     modifier = Modifier
                         .scale(scale.value)
                         .alpha(alpha.value)
-                        .size(100.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(Color.White.copy(alpha = 0.05f)),
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.ic_shipu_logo),
                         contentDescription = "ShiPu AI Official Logo",
-                        modifier = Modifier.size(80.dp)
+                        modifier = Modifier.size(62.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
                 // Brand Title
                 Text(
                     text = "ShiPu AI",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface,
-                    letterSpacing = (-0.5).sp,
                     modifier = Modifier.alpha(alpha.value)
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
                 // Subtitle Tagline
                 Text(
                     text = "Personal Intelligent Assistant",
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Medium,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.alpha(alpha.value)
                 )
 
-                Spacer(modifier = Modifier.height(36.dp))
+                Spacer(modifier = Modifier.height(28.dp))
 
                 // Subtle Loading Spinner
                 CircularProgressIndicator(
                     modifier = Modifier
-                        .size(20.dp)
+                        .size(18.dp)
                         .alpha(alpha.value),
                     color = MaterialTheme.colorScheme.primary,
                     strokeWidth = 2.dp

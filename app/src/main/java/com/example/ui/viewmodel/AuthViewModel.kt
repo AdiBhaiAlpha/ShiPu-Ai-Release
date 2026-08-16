@@ -38,42 +38,49 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     fun checkExistingSession() {
         viewModelScope.launch(Dispatchers.IO) {
-            Log.d("ShiPuAi_Startup", "STARTUP: Session restore BEGIN")
-            val userId = sessionManager.getActiveUserId()
-            val name = sessionManager.getActiveUserName()
-            val email = sessionManager.getActiveUserEmail()
+            try {
+                Log.d("ShiPuAi_Startup", "ShiPuAI_STARTUP_06: Session restore BEGIN")
+                val userId = sessionManager.getActiveUserId()
+                val name = sessionManager.getActiveUserName()
+                val email = sessionManager.getActiveUserEmail()
 
-            if (userId != null && email != null) {
-                val user = User(
-                    userId = userId,
-                    email = email,
-                    passwordHash = "",
-                    name = name ?: "User"
-                )
-                withContext(Dispatchers.Main) {
-                    _uiState.update {
-                        it.copy(
-                            isAuthenticated = true,
-                            userId = userId,
-                            currentUser = user,
-                            isLoading = false
-                        )
-                    }
-                }
-                Log.d("ShiPuAi_Startup", "STARTUP: Session restore END (Authenticated)")
-
-                val dbUser = authRepository.getCurrentUser(userId)
-                if (dbUser != null) {
+                if (userId != null && email != null) {
+                    val user = User(
+                        userId = userId,
+                        email = email,
+                        passwordHash = "",
+                        name = name ?: "User"
+                    )
                     withContext(Dispatchers.Main) {
-                        _uiState.update { it.copy(currentUser = dbUser) }
+                        _uiState.update {
+                            it.copy(
+                                isAuthenticated = true,
+                                userId = userId,
+                                currentUser = user,
+                                isLoading = false
+                            )
+                        }
+                    }
+                    Log.d("ShiPuAi_Startup", "ShiPuAI_STARTUP_07: Session restore END (Authenticated)")
+
+                    val dbUser = authRepository.getCurrentUser(userId)
+                    if (dbUser != null) {
+                        withContext(Dispatchers.Main) {
+                            _uiState.update { it.copy(currentUser = dbUser) }
+                        }
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            logout()
+                        }
                     }
                 } else {
+                    Log.d("ShiPuAi_Startup", "ShiPuAI_STARTUP_07: Session restore END (Unauthenticated)")
                     withContext(Dispatchers.Main) {
-                        logout()
+                        _uiState.update { it.copy(isAuthenticated = false, isLoading = false) }
                     }
                 }
-            } else {
-                Log.d("ShiPuAi_Startup", "STARTUP: Session restore END (Unauthenticated)")
+            } catch (e: Throwable) {
+                Log.e("ShiPuAi_Startup", "ShiPuAI_STARTUP_07_ERROR: Error during session restore", e)
                 withContext(Dispatchers.Main) {
                     _uiState.update { it.copy(isAuthenticated = false, isLoading = false) }
                 }

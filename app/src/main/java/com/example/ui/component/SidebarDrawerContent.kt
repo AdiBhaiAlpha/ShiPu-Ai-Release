@@ -116,7 +116,7 @@ fun SidebarDrawerContent(
                         contentAlignment = Alignment.Center
                     ) {
                         androidx.compose.foundation.Image(
-                            painter = androidx.compose.ui.res.painterResource(id = com.example.R.drawable.ic_shipu_logo),
+                            painter = androidx.compose.ui.res.painterResource(id = com.shipu.ai.R.drawable.ic_shipu_logo),
                             contentDescription = "ShiPu AI Logo",
                             modifier = Modifier.size(24.dp)
                         )

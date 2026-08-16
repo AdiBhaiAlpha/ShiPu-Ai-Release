@@ -72,7 +72,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.R
+import com.shipu.ai.R
 import com.example.data.model.UserMemory
 import com.example.data.model.UserPreferences
 import com.example.ui.viewmodel.AuthUiState

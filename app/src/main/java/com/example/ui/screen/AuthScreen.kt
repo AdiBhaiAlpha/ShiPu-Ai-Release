@@ -1,9 +1,10 @@
 package com.example.ui.screen
 
+import android.util.Log
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearOutSlowInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -29,7 +30,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -62,9 +62,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -75,21 +76,23 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.R
+import com.shipu.ai.R
+import com.example.ui.theme.BrandAccent
 import com.example.ui.viewmodel.AuthUiState
 import com.example.ui.viewmodel.AuthViewModel
 import kotlinx.coroutines.launch
 
 /**
- * Fullscreen, premium, mobile-first ShiPu AI Authentication Screen.
- * Uses the official ShiPu AI logo with subtle entrance animation, clean typography,
- * lightweight input design, inline error reporting, and fast mode transitions.
+ * Calm, refined, production-grade ShiPu AI Authentication Screen.
+ * Designed with restrained visual hierarchy, warm and trustworthy typography,
+ * seamless mode transitions, and full accessibility compliance.
  */
 @Composable
 fun AuthScreen(
     authViewModel: AuthViewModel,
     uiState: AuthUiState
 ) {
+    Log.d("ShiPuAi_Startup", "ShiPuAI_STARTUP_10: AuthScreen rendering BEGIN")
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
@@ -100,21 +103,21 @@ fun AuthScreen(
     var showForgotPasswordDialog by remember { mutableStateOf(false) }
     var localValidationError by remember { mutableStateOf<String?>(null) }
 
-    // Logo entrance animation (opacity 0 -> 1, scale 0.92 -> 1, duration ~600ms, subtle easing)
-    val logoAlpha = remember { Animatable(0f) }
-    val logoScale = remember { Animatable(0.92f) }
+    // Subtle, calm entrance animation for the header
+    val entranceAlpha = remember { Animatable(0f) }
+    val entranceScale = remember { Animatable(0.96f) }
 
     LaunchedEffect(Unit) {
         launch {
-            logoAlpha.animateTo(
+            entranceAlpha.animateTo(
                 targetValue = 1f,
-                animationSpec = tween(durationMillis = 600, easing = LinearOutSlowInEasing)
+                animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
             )
         }
         launch {
-            logoScale.animateTo(
+            entranceScale.animateTo(
                 targetValue = 1f,
-                animationSpec = tween(durationMillis = 600, easing = LinearOutSlowInEasing)
+                animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing)
             )
         }
     }
@@ -132,7 +135,7 @@ fun AuthScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .widthIn(max = 420.dp)
+                    .widthIn(max = 440.dp)
                     .statusBarsPadding()
                     .navigationBarsPadding()
                     .imePadding()
@@ -141,47 +144,44 @@ fun AuthScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // TOP LOGO & BRANDING SECTION
+                // TOP BRAND & HEADLINE SECTION
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .alpha(entranceAlpha.value)
+                        .scale(entranceScale.value)
                 ) {
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // ShiPu AI Official Logo with Entrance Animation
+                    // Canonical Official ShiPu AI Brand Logo
                     Box(
                         modifier = Modifier
-                            .size(76.dp)
-                            .graphicsLayer {
-                                alpha = logoAlpha.value
-                                scaleX = logoScale.value
-                                scaleY = logoScale.value
-                            }
-                            .clip(RoundedCornerShape(22.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)),
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
                             painter = painterResource(id = R.drawable.ic_shipu_logo),
                             contentDescription = "ShiPu AI Logo",
-                            modifier = Modifier.size(60.dp)
+                            modifier = Modifier.size(44.dp)
                         )
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Brand Name
+                    // Brand Title
                     Text(
                         text = "ShiPu AI",
-                        fontSize = 26.sp,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface,
-                        letterSpacing = (-0.5).sp
+                        fontWeight = FontWeight.SemiBold
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-                    // Dynamic Headline & Subtitle Mode Transition
+                    // Header Mode Transition (Sign Up vs Sign In)
                     AnimatedContent(
                         targetState = uiState.isSignUpMode,
                         transitionSpec = {
@@ -190,53 +190,54 @@ fun AuthScreen(
                         },
                         label = "auth_header_transition"
                     ) { isSignUp ->
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
                             Text(
                                 text = if (isSignUp) "Create your account" else "Welcome back",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.headlineMedium,
                                 color = MaterialTheme.colorScheme.onSurface,
                                 textAlign = TextAlign.Center
                             )
 
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(6.dp))
 
                             Text(
                                 text = if (isSignUp)
-                                    "Start building your personal AI workspace."
+                                    "A calm space for your personal AI conversations."
                                 else
-                                    "Sign in to continue to your personal AI workspace.",
-                                fontSize = 13.sp,
+                                    "Sign in to access your conversations and memories.",
+                                style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                textAlign = TextAlign.Center,
-                                lineHeight = 18.sp
+                                textAlign = TextAlign.Center
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                // FORM FIELDS SECTION
+                // INPUT FORM SECTION
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Inline Error Message Display
+                    // Inline Error / Validation Feedback
                     val displayError = uiState.errorMessage ?: localValidationError
                     if (displayError != null) {
                         Surface(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 16.dp),
-                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.85f),
-                            shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.3f))
+                            color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.25f),
+                            shape = RoundedCornerShape(10.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.4f))
                         ) {
                             Text(
                                 text = displayError,
-                                color = MaterialTheme.colorScheme.onErrorContainer,
-                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Medium,
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                                 textAlign = TextAlign.Center
@@ -244,12 +245,12 @@ fun AuthScreen(
                         }
                     }
 
-                    // Form Mode Animated Content (Login vs Register)
+                    // Form Fields
                     AnimatedContent(
                         targetState = uiState.isSignUpMode,
                         transitionSpec = {
-                            (fadeIn(animationSpec = tween(250)) + slideInVertically { it / 15 })
-                                .togetherWith(fadeOut(animationSpec = tween(200)) + slideOutVertically { -it / 15 })
+                            (fadeIn(animationSpec = tween(240)) + slideInVertically { it / 16 })
+                                .togetherWith(fadeOut(animationSpec = tween(180)) + slideOutVertically { -it / 16 })
                         },
                         label = "auth_form_transition"
                     ) { isSignUp ->
@@ -262,8 +263,8 @@ fun AuthScreen(
                                         name = it
                                         localValidationError = null
                                     },
-                                    label = { Text("Full Name", fontSize = 13.sp) },
-                                    placeholder = { Text("John Doe", fontSize = 13.sp) },
+                                    label = { Text("Full Name", style = MaterialTheme.typography.bodySmall) },
+                                    placeholder = { Text("John Doe", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)) },
                                     leadingIcon = {
                                         Icon(
                                             imageVector = Icons.Outlined.Person,
@@ -275,12 +276,16 @@ fun AuthScreen(
                                     singleLine = true,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(56.dp)
+                                        .height(54.dp)
                                         .testTag("name_input"),
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = RoundedCornerShape(10.dp),
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                                     )
                                 )
 
@@ -294,8 +299,8 @@ fun AuthScreen(
                                     email = it
                                     localValidationError = null
                                 },
-                                label = { Text("Email", fontSize = 13.sp) },
-                                placeholder = { Text("name@example.com", fontSize = 13.sp) },
+                                label = { Text("Email", style = MaterialTheme.typography.bodySmall) },
+                                placeholder = { Text("name@example.com", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)) },
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Outlined.Email,
@@ -311,12 +316,16 @@ fun AuthScreen(
                                 singleLine = true,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(56.dp)
+                                    .height(54.dp)
                                     .testTag("email_input"),
-                                shape = RoundedCornerShape(12.dp),
+                                shape = RoundedCornerShape(10.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                                 )
                             )
 
@@ -329,8 +338,8 @@ fun AuthScreen(
                                     password = it
                                     localValidationError = null
                                 },
-                                label = { Text("Password", fontSize = 13.sp) },
-                                placeholder = { Text("••••••••", fontSize = 13.sp) },
+                                label = { Text("Password", style = MaterialTheme.typography.bodySmall) },
+                                placeholder = { Text("••••••••", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)) },
                                 leadingIcon = {
                                     Icon(
                                         imageVector = Icons.Outlined.Lock,
@@ -342,7 +351,7 @@ fun AuthScreen(
                                 trailingIcon = {
                                     IconButton(
                                         onClick = { passwordVisible = !passwordVisible },
-                                        modifier = Modifier.size(24.dp)
+                                        modifier = Modifier.size(48.dp)
                                     ) {
                                         Icon(
                                             imageVector = if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
@@ -371,12 +380,16 @@ fun AuthScreen(
                                 singleLine = true,
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(56.dp)
+                                    .height(54.dp)
                                     .testTag("password_input"),
-                                shape = RoundedCornerShape(12.dp),
+                                shape = RoundedCornerShape(10.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                                 )
                             )
 
@@ -390,8 +403,8 @@ fun AuthScreen(
                                         confirmPassword = it
                                         localValidationError = null
                                     },
-                                    label = { Text("Confirm Password", fontSize = 13.sp) },
-                                    placeholder = { Text("••••••••", fontSize = 13.sp) },
+                                    label = { Text("Confirm Password", style = MaterialTheme.typography.bodySmall) },
+                                    placeholder = { Text("••••••••", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)) },
                                     leadingIcon = {
                                         Icon(
                                             imageVector = Icons.Outlined.Lock,
@@ -403,7 +416,7 @@ fun AuthScreen(
                                     trailingIcon = {
                                         IconButton(
                                             onClick = { confirmPasswordVisible = !confirmPasswordVisible },
-                                            modifier = Modifier.size(24.dp)
+                                            modifier = Modifier.size(48.dp)
                                         ) {
                                             Icon(
                                                 imageVector = if (confirmPasswordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
@@ -432,12 +445,16 @@ fun AuthScreen(
                                     singleLine = true,
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(56.dp)
+                                        .height(54.dp)
                                         .testTag("confirm_password_input"),
-                                    shape = RoundedCornerShape(12.dp),
+                                    shape = RoundedCornerShape(10.dp),
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = MaterialTheme.colorScheme.primary,
-                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline
+                                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                                     )
                                 )
                             } else {
@@ -452,8 +469,7 @@ fun AuthScreen(
                                     ) {
                                         Text(
                                             text = "Forgot password?",
-                                            fontSize = 12.sp,
-                                            fontWeight = FontWeight.Medium,
+                                            style = MaterialTheme.typography.labelMedium,
                                             color = MaterialTheme.colorScheme.primary
                                         )
                                     }
@@ -464,7 +480,7 @@ fun AuthScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Primary Action Button
+                    // Primary Action Button (Strongest interactive element with brand accent)
                     Button(
                         onClick = {
                             localValidationError = null
@@ -494,13 +510,13 @@ fun AuthScreen(
                         enabled = !uiState.isLoading,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(54.dp)
+                            .height(50.dp)
                             .testTag("auth_submit_button"),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary,
-                            disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+                            disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
                         ),
                         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
                     ) {
@@ -510,30 +526,28 @@ fun AuthScreen(
                                 horizontalArrangement = Arrangement.Center
                             ) {
                                 CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
+                                    modifier = Modifier.size(18.dp),
                                     color = MaterialTheme.colorScheme.onPrimary,
                                     strokeWidth = 2.dp
                                 )
                                 Spacer(modifier = Modifier.width(10.dp))
                                 Text(
                                     text = if (uiState.isSignUpMode) "Creating account..." else "Signing in...",
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.SemiBold
+                                    style = MaterialTheme.typography.labelLarge
                                 )
                             }
                         } else {
                             Text(
                                 text = if (uiState.isSignUpMode) "Create Account" else "Sign In",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.SemiBold
+                                style = MaterialTheme.typography.labelLarge
                             )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(28.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-                // FOOTER & MODE TOGGLE SECTION
+                // FOOTER & TRUST ASSURANCE
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxWidth()
@@ -544,7 +558,7 @@ fun AuthScreen(
                     ) {
                         Text(
                             text = if (uiState.isSignUpMode) "Already have an account?" else "Don't have an account?",
-                            fontSize = 13.sp,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.width(4.dp))
@@ -556,37 +570,35 @@ fun AuthScreen(
                             modifier = Modifier.testTag("toggle_auth_mode_button")
                         ) {
                             Text(
-                                text = if (uiState.isSignUpMode) "Sign In" else "Sign Up",
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold,
+                                text = if (uiState.isSignUpMode) "Sign in" else "Create one",
+                                style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                    // Encrypted Security Badge
+                    // Calm, Non-Intrusive Privacy & Security Reassurance
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center,
                         modifier = Modifier
-                            .background(
-                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
-                                shape = CircleShape
-                            )
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Shield,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(13.dp)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            modifier = Modifier.size(14.dp)
                         )
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
-                            text = "ShiPu AI Secure Local Session",
-                            fontSize = 11.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = "End-to-end local session encryption. Your data stays private.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                            textAlign = TextAlign.Center
                         )
                     }
                 }
@@ -594,18 +606,21 @@ fun AuthScreen(
         }
     }
 
-    // Forgot Password Dialog
+    // Forgot Password Recovery Modal
     if (showForgotPasswordDialog) {
         var resetEmail by remember { mutableStateOf(email) }
         var isSubmitted by remember { mutableStateOf(false) }
 
         AlertDialog(
             onDismissRequest = { showForgotPasswordDialog = false },
+            containerColor = MaterialTheme.colorScheme.surface,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+            textContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+            shape = RoundedCornerShape(14.dp),
             title = {
                 Text(
                     text = if (isSubmitted) "Check Your Inbox" else "Reset Password",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold
+                    style = MaterialTheme.typography.titleLarge
                 )
             },
             text = {
@@ -619,12 +634,12 @@ fun AuthScreen(
                                 modifier = Modifier.size(20.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Instructions sent!", fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                            Text("Instructions sent", style = MaterialTheme.typography.titleMedium)
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "If an account exists for $resetEmail, password reset instructions have been generated. You can now log in.",
-                            fontSize = 13.sp,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -632,17 +647,25 @@ fun AuthScreen(
                     Column {
                         Text(
                             text = "Enter your registered email address to receive password recovery instructions.",
-                            fontSize = 13.sp,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
                         OutlinedTextField(
                             value = resetEmail,
                             onValueChange = { resetEmail = it },
-                            label = { Text("Email address", fontSize = 12.sp) },
+                            label = { Text("Email address", style = MaterialTheme.typography.bodySmall) },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(10.dp)
+                            shape = RoundedCornerShape(10.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                                unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+                            )
                         )
                     }
                 }
@@ -651,24 +674,30 @@ fun AuthScreen(
                 if (isSubmitted) {
                     Button(
                         onClick = { showForgotPasswordDialog = false },
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
                     ) {
-                        Text("Done")
+                        Text("Done", style = MaterialTheme.typography.labelMedium)
                     }
                 } else {
                     Button(
                         onClick = { isSubmitted = true },
                         enabled = resetEmail.contains("@"),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary
+                        )
                     ) {
-                        Text("Send Instructions")
+                        Text("Send Instructions", style = MaterialTheme.typography.labelMedium)
                     }
                 }
             },
             dismissButton = {
                 if (!isSubmitted) {
                     TextButton(onClick = { showForgotPasswordDialog = false }) {
-                        Text("Cancel")
+                        Text("Cancel", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }

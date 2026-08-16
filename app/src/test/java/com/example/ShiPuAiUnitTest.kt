@@ -1,5 +1,10 @@
 package com.example
 
+import com.example.data.local.db.ConversationEntity
+import com.example.data.local.db.MessageEntity
+import com.example.data.local.db.UserEntity
+import com.example.data.local.db.UserMemoryEntity
+import com.example.data.local.db.UserPreferencesEntity
 import com.example.data.model.Conversation
 import com.example.data.model.Message
 import com.example.data.model.User
@@ -27,7 +32,7 @@ class ShiPuAiUnitTest {
     }
 
     @Test
-    fun testUserDocumentSerialization() {
+    fun testUserEntitySerialization() {
         val user = User(
             userId = "usr_123456789",
             email = "test@example.com",
@@ -35,19 +40,19 @@ class ShiPuAiUnitTest {
             name = "Test User"
         )
 
-        val doc = user.toDocument()
-        assertEquals("usr_123456789", doc.getString("userId"))
-        assertEquals("test@example.com", doc.getString("email"))
-        assertEquals("Test User", doc.getString("name"))
+        val entity = UserEntity.fromUser(user)
+        assertEquals("usr_123456789", entity.userId)
+        assertEquals("test@example.com", entity.email)
+        assertEquals("Test User", entity.name)
 
-        val restored = User.fromDocument(doc)
+        val restored = entity.toUser()
         assertEquals(user.userId, restored.userId)
         assertEquals(user.email, restored.email)
         assertEquals(user.name, restored.name)
     }
 
     @Test
-    fun testConversationDocumentSerialization() {
+    fun testConversationEntitySerialization() {
         val conv = Conversation(
             conversationId = "conv_abc123",
             userId = "usr_123456789",
@@ -55,20 +60,20 @@ class ShiPuAiUnitTest {
             isPinned = true
         )
 
-        val doc = conv.toDocument()
-        assertEquals("conv_abc123", doc.getString("conversationId"))
-        assertEquals("usr_123456789", doc.getString("userId"))
-        assertEquals("My Project Discussion", doc.getString("title"))
-        assertEquals(true, doc.getBoolean("isPinned"))
+        val entity = ConversationEntity.fromConversation(conv)
+        assertEquals("conv_abc123", entity.conversationId)
+        assertEquals("usr_123456789", entity.userId)
+        assertEquals("My Project Discussion", entity.title)
+        assertEquals(true, entity.isPinned)
 
-        val restored = Conversation.fromDocument(doc)
+        val restored = entity.toConversation()
         assertEquals(conv.conversationId, restored.conversationId)
         assertEquals(conv.title, restored.title)
         assertEquals(conv.isPinned, restored.isPinned)
     }
 
     @Test
-    fun testMessageDocumentSerialization() {
+    fun testMessageEntitySerialization() {
         val msg = Message(
             messageId = "msg_001",
             conversationId = "conv_abc123",
@@ -77,19 +82,19 @@ class ShiPuAiUnitTest {
             content = "Hello ShiPu AI!"
         )
 
-        val doc = msg.toDocument()
-        assertEquals("msg_001", doc.getString("messageId"))
-        assertEquals("user", doc.getString("role"))
-        assertEquals("Hello ShiPu AI!", doc.getString("content"))
+        val entity = MessageEntity.fromMessage(msg)
+        assertEquals("msg_001", entity.messageId)
+        assertEquals("user", entity.role)
+        assertEquals("Hello ShiPu AI!", entity.content)
 
-        val restored = Message.fromDocument(doc)
+        val restored = entity.toMessage()
         assertEquals(msg.messageId, restored.messageId)
         assertEquals(msg.role, restored.role)
         assertEquals(msg.content, restored.content)
     }
 
     @Test
-    fun testUserMemorySerialization() {
+    fun testUserMemoryEntitySerialization() {
         val mem = UserMemory(
             memoryId = "mem_001",
             userId = "usr_123456789",
@@ -97,19 +102,19 @@ class ShiPuAiUnitTest {
             category = "personal"
         )
 
-        val doc = mem.toDocument()
-        assertEquals("mem_001", doc.getString("memoryId"))
-        assertEquals("User works as an Android Developer", doc.getString("fact"))
-        assertEquals("personal", doc.getString("category"))
+        val entity = UserMemoryEntity.fromUserMemory(mem)
+        assertEquals("mem_001", entity.memoryId)
+        assertEquals("User works as an Android Developer", entity.fact)
+        assertEquals("personal", entity.category)
 
-        val restored = UserMemory.fromDocument(doc)
+        val restored = entity.toUserMemory()
         assertEquals(mem.memoryId, restored.memoryId)
         assertEquals(mem.fact, restored.fact)
         assertEquals(mem.category, restored.category)
     }
 
     @Test
-    fun testUserPreferencesSerialization() {
+    fun testUserPreferencesEntitySerialization() {
         val prefs = UserPreferences(
             userId = "usr_123456789",
             theme = "dark",
@@ -117,15 +122,16 @@ class ShiPuAiUnitTest {
             customSystemPrompt = "Custom AI Persona"
         )
 
-        val doc = prefs.toDocument()
-        assertEquals("usr_123456789", doc.getString("userId"))
-        assertEquals("dark", doc.getString("theme"))
-        assertEquals("openrouter/free", doc.getString("defaultModel"))
-        assertEquals("Custom AI Persona", doc.getString("customSystemPrompt"))
+        val entity = UserPreferencesEntity.fromUserPreferences(prefs)
+        assertEquals("usr_123456789", entity.userId)
+        assertEquals("dark", entity.theme)
+        assertEquals("openrouter/free", entity.defaultModel)
+        assertEquals("Custom AI Persona", entity.customSystemPrompt)
 
-        val restored = UserPreferences.fromDocument(doc)
+        val restored = entity.toUserPreferences()
         assertEquals(prefs.userId, restored.userId)
         assertEquals(prefs.theme, restored.theme)
         assertEquals(prefs.customSystemPrompt, restored.customSystemPrompt)
     }
 }
+

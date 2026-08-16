@@ -3,6 +3,7 @@ package com.example
 import android.app.Application
 import android.os.StrictMode
 import android.util.Log
+import com.shipu.ai.BuildConfig
 
 class ShiPuAiApplication : Application() {
 
@@ -10,7 +11,7 @@ class ShiPuAiApplication : Application() {
         super.onCreate()
         instance = this
 
-        Log.d("ShiPuAi_Startup", "STARTUP: Application.onCreate BEGIN")
+        Log.d("ShiPuAi_Startup", "ShiPuAI_STARTUP_01: Application.onCreate BEGIN")
 
         // Enable StrictMode in debug builds to catch main-thread disk/network operations
         if (BuildConfig.DEBUG) {
@@ -44,7 +45,7 @@ class ShiPuAiApplication : Application() {
             defaultHandler?.uncaughtException(thread, throwable)
         }
 
-        Log.d("ShiPuAi_Startup", "STARTUP: Application.onCreate END")
+        Log.d("ShiPuAi_Startup", "ShiPuAI_STARTUP_02: Application.onCreate END")
     }
 
     private fun getRootCause(throwable: Throwable): Throwable {

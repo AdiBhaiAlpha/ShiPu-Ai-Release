@@ -37,11 +37,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Log.d("ShiPuAi_Startup", "STARTUP: MainActivity.onCreate BEGIN")
+        Log.d("ShiPuAi_Startup", "ShiPuAI_STARTUP_03: MainActivity.onCreate BEGIN")
         enableEdgeToEdge()
 
         setContent {
-            Log.d("ShiPuAi_Startup", "STARTUP: Compose content BEGIN")
+            Log.d("ShiPuAi_Startup", "ShiPuAI_STARTUP_04: Compose setContent BEGIN")
             val authUiState by authViewModel.uiState.collectAsStateWithLifecycle()
             val chatUiState by chatViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -50,10 +50,10 @@ class MainActivity : ComponentActivity() {
             // Initialize chat user session when authenticated
             LaunchedEffect(authUiState.isAuthenticated, authUiState.userId) {
                 if (authUiState.isAuthenticated && authUiState.userId != null) {
-                    Log.d("ShiPuAi_Startup", "STARTUP: Auth state authenticated for ${authUiState.userId}")
+                    Log.d("ShiPuAi_Startup", "ShiPuAI_STARTUP_05: Auth state authenticated for ${authUiState.userId}")
                     chatViewModel.initUser(authUiState.userId!!)
                 } else if (!authUiState.isLoading) {
-                    Log.d("ShiPuAi_Startup", "STARTUP: Auth state unauthenticated")
+                    Log.d("ShiPuAi_Startup", "ShiPuAI_STARTUP_05: Auth state unauthenticated (ready for login)")
                 }
             }
 

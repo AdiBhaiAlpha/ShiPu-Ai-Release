@@ -2,38 +2,46 @@ package com.example.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// ShiPu AI Brand Accent (Indigo/Slate derived from logo)
+// ShiPu AI Brand Accent (Refined Indigo-Slate with subtle warm depth)
 val BrandAccent = Color(0xFF6366F1)
-val BrandAccentDark = Color(0xFF4F46E5)
+val BrandAccentHover = Color(0xFF4F46E5)
+val BrandAccentDark = Color(0xFF4338CA)
 val BrandAccentLight = Color(0xFF818CF8)
+val BrandAccentMuted = Color(0xFF4338CA).copy(alpha = 0.25f)
 
-// Light Theme Neutrals
-val LightBgPure = Color(0xFFFFFFFF)
-val LightBgSubtle = Color(0xFFF8FAFC)
+// Brand Gold Detail (Accents only, used with extreme restraint)
+val BrandGoldDetail = Color(0xFFF59E0B)
+
+// Refined Dark Theme Neutrals (Deep Obsidian / Graphite #101214)
+val DarkBgPure = Color(0xFF101214)
+val DarkSurface = Color(0xFF16181B)
+val DarkSurfaceElevated = Color(0xFF1C1F24)
+val DarkSurfaceVariant = Color(0xFF22262C)
+val DarkBorderSubtle = Color(0xFF282D35)
+val DarkBorderFocused = Color(0xFF6366F1)
+val DarkTextPrimary = Color(0xFFF3F4F6)
+val DarkTextSecondary = Color(0xFF9CA3AF)
+val DarkTextMuted = Color(0xFF6B7280)
+
+// Chat Bubbles - Dark (Subtle tonal separation, low cognitive load)
+val DarkUserBubble = Color(0xFF1E2228)
+val DarkAssistantBubble = Color(0xFF141619)
+val CodeBlockBg = Color(0xFF16181B)
+
+// Light Theme Neutrals (Clean Slate Off-White)
+val LightBgPure = Color(0xFFF9FAFB)
 val LightSurface = Color(0xFFFFFFFF)
-val LightSurfaceVariant = Color(0xFFF1F5F9)
-val LightBorderSubtle = Color(0xFFE2E8F0)
-val LightTextPrimary = Color(0xFF0F172A)
-val LightTextSecondary = Color(0xFF64748B)
-val LightTextMuted = Color(0xFF94A3B8)
+val LightSurfaceElevated = Color(0xFFF3F4F6)
+val LightSurfaceVariant = Color(0xFFE5E7EB)
+val LightBorderSubtle = Color(0xFFE5E7EB)
+val LightBorderFocused = Color(0xFF4F46E5)
+val LightTextPrimary = Color(0xFF111827)
+val LightTextSecondary = Color(0xFF4B5563)
+val LightTextMuted = Color(0xFF9CA3AF)
 
 // Chat Bubbles - Light
-val LightUserBubble = Color(0xFFF1F5F9)
-val LightUserText = Color(0xFF0F172A)
+val LightUserBubble = Color(0xFFEEF2F6)
+val LightUserText = Color(0xFF111827)
 val LightAssistantBubble = Color(0xFFFFFFFF)
 
-// Dark Theme Neutrals (Near-black / deep obsidian #0D1117)
-val DarkBgPure = Color(0xFF0D1117)
-val DarkSurface = Color(0xFF161B22)
-val DarkSurfaceVariant = Color(0xFF21262D)
-val DarkBorderSubtle = Color(0xFF30363D)
-val DarkTextPrimary = Color(0xFFF0F6FC)
-val DarkTextSecondary = Color(0xFF8B949E)
-val DarkTextMuted = Color(0xFF6E7681)
-
-// Chat Bubbles - Dark
-val DarkUserBubble = Color(0xFF21262D)
-val DarkAssistantBubble = Color(0xFF161B22)
-
-val CodeBlockBg = Color(0xFF161B22)
 
