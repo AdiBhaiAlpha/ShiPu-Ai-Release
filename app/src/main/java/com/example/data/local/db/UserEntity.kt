@@ -10,6 +10,7 @@ data class UserEntity(
     val email: String,
     val passwordHash: String,
     val name: String,
+    val role: String = "USER",
     val createdAt: Long,
     val updatedAt: Long
 ) {
@@ -18,6 +19,7 @@ data class UserEntity(
         email = email,
         passwordHash = passwordHash,
         name = name,
+        role = if (email.trim().lowercase() == "chitronbhattacharjee@gmail.com") "SUPER_ADMIN" else role,
         createdAt = createdAt,
         updatedAt = updatedAt
     )
@@ -28,6 +30,7 @@ data class UserEntity(
             email = user.email,
             passwordHash = user.passwordHash,
             name = user.name,
+            role = if (user.email.trim().lowercase() == "chitronbhattacharjee@gmail.com") "SUPER_ADMIN" else user.role,
             createdAt = user.createdAt,
             updatedAt = user.updatedAt
         )

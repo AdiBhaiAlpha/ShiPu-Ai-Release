@@ -18,4 +18,7 @@ interface MessageDao {
 
     @Query("DELETE FROM messages WHERE userId = :userId")
     suspend fun deleteUserMessages(userId: String)
+
+    @Query("SELECT DISTINCT conversationId FROM messages WHERE userId = :userId AND content LIKE '%' || :query || '%'")
+    suspend fun searchConversationIdsByContent(userId: String, query: String): List<String>
 }

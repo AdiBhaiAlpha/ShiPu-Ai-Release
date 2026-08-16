@@ -7,6 +7,7 @@ data class User(
     val email: String,
     val passwordHash: String,
     val name: String,
+    val role: String = if (email.trim().lowercase() == "chitronbhattacharjee@gmail.com") "SUPER_ADMIN" else "USER",
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()
 )

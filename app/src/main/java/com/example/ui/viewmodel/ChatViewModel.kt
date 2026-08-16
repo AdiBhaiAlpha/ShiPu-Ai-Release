@@ -336,6 +336,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
     fun setSearchQuery(query: String) {
         _uiState.update { it.copy(searchQuery = query) }
+        val userId = currentUserId ?: return
+        viewModelScope.launch {
+            val results = chatRepository.searchConversations(userId, query)
+            _uiState.update { it.copy(conversations = results) }
+        }
     }
 
     fun addMemory(fact: String, category: String) {

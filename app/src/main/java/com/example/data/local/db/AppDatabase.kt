@@ -13,9 +13,13 @@ import com.example.ShiPuAiApplication
         MessageEntity::class,
         UserMemoryEntity::class,
         UserPreferencesEntity::class,
-        SessionEntity::class
+        SessionEntity::class,
+        SystemPromptEntity::class,
+        KnowledgeEntity::class,
+        AdminConfigEntity::class,
+        AdminAuditLogEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -26,6 +30,10 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun userMemoryDao(): UserMemoryDao
     abstract fun userPreferencesDao(): UserPreferencesDao
     abstract fun sessionDao(): SessionDao
+    abstract fun systemPromptDao(): SystemPromptDao
+    abstract fun knowledgeDao(): KnowledgeDao
+    abstract fun adminConfigDao(): AdminConfigDao
+    abstract fun adminAuditLogDao(): AdminAuditLogDao
 
     companion object {
         @Volatile

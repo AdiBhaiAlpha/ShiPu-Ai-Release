@@ -1,5 +1,6 @@
 package com.example.ui.screen
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
@@ -14,9 +15,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.ArrowDownward
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.DarkMode
@@ -39,6 +42,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -83,18 +87,73 @@ fun MainChatScreen(
     var inputPrompt by remember { mutableStateOf("") }
     var showMemoryModal by remember { mutableStateOf(false) }
     var showSettingsScreen by remember { mutableStateOf(false) }
+    var showAdminScreen by remember { mutableStateOf(false) }
 
     val activeConv = chatUiState.conversations.firstOrNull { it.conversationId == chatUiState.activeConversationId }
 
-    // Auto scroll list to bottom when new messages arrive or stream updates
-    LaunchedEffect(chatUiState.messages.size, chatUiState.streamingChunk) {
-        val totalCount = chatUiState.messages.size + if (chatUiState.isStreaming) 1 else 0
-        if (totalCount > 0) {
-            listState.animateScrollToItem(totalCount - 1)
+    // Back handler for in-app navigation (admin, settings, memory modal, drawer)
+    BackHandler(enabled = drawerState.isOpen || showSettingsScreen || showMemoryModal || showAdminScreen) {
+        if (showAdminScreen) {
+            showAdminScreen = false
+        } else if (showSettingsScreen) {
+            showSettingsScreen = false
+        } else if (showMemoryModal) {
+            showMemoryModal = false
+        } else if (drawerState.isOpen) {
+            scope.launch { drawerState.close() }
         }
     }
 
-    if (showSettingsScreen) {
+    var autoScrollEnabled by remember { mutableStateOf(true) }
+
+    val isAtBottom = remember {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val visibleItems = layoutInfo.visibleItemsInfo
+            val totalCount = chatUiState.messages.size + if (chatUiState.isStreaming) 1 else 0
+            if (totalCount == 0) true
+            else {
+                val lastVisibleItem = visibleItems.lastOrNull()
+                lastVisibleItem == null || lastVisibleItem.index >= totalCount - 2
+            }
+        }
+    }
+
+    LaunchedEffect(listState.isScrollInProgress) {
+        if (listState.isScrollInProgress && chatUiState.isStreaming) {
+            if (!isAtBottom.value) {
+                autoScrollEnabled = false
+            }
+        }
+    }
+
+    LaunchedEffect(isAtBottom.value) {
+        if (isAtBottom.value) {
+            autoScrollEnabled = true
+        }
+    }
+
+    // Auto scroll list to bottom when new messages arrive or stream updates if enabled
+    LaunchedEffect(chatUiState.messages.size, chatUiState.streamingChunk) {
+        if (autoScrollEnabled) {
+            val totalCount = chatUiState.messages.size + if (chatUiState.isStreaming) 1 else 0
+            if (totalCount > 0) {
+                listState.animateScrollToItem(totalCount - 1)
+            }
+        }
+    }
+
+    if (showAdminScreen) {
+        AdminDashboardScreen(
+            adminViewModel = remember {
+                com.example.ui.viewmodel.AdminViewModel(
+                    userId = authUiState.currentUser?.userId ?: "",
+                    userEmail = authUiState.currentUser?.email ?: ""
+                )
+            },
+            onBack = { showAdminScreen = false }
+        )
+    } else if (showSettingsScreen) {
         SettingsScreen(
             chatViewModel = chatViewModel,
             chatUiState = chatUiState,
@@ -143,6 +202,10 @@ fun MainChatScreen(
                         },
                         onLogout = {
                             onLogout()
+                            scope.launch { drawerState.close() }
+                        },
+                        onOpenAdmin = {
+                            showAdminScreen = true
                             scope.launch { drawerState.close() }
                         }
                     )
@@ -324,16 +387,61 @@ fun MainChatScreen(
                                 )
                             }
                         } else {
-                            // Messages List using ChatMessageList
-                            ChatMessageList(
-                                messages = chatUiState.messages,
-                                isDarkTheme = chatUiState.isDarkTheme,
-                                isStreaming = chatUiState.isStreaming,
-                                streamingChunk = chatUiState.streamingChunk,
-                                listState = listState,
-                                onRegenerate = { chatViewModel.regenerateLastResponse() },
-                                modifier = Modifier.weight(1f)
-                            )
+                            // Messages List container with Jump to Bottom button overlay
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f)
+                            ) {
+                                ChatMessageList(
+                                    messages = chatUiState.messages,
+                                    isDarkTheme = chatUiState.isDarkTheme,
+                                    isStreaming = chatUiState.isStreaming,
+                                    streamingChunk = chatUiState.streamingChunk,
+                                    listState = listState,
+                                    onRegenerate = { chatViewModel.regenerateLastResponse() },
+                                    modifier = Modifier.fillMaxSize()
+                                )
+
+                                if (!autoScrollEnabled && (!isAtBottom.value || chatUiState.isStreaming)) {
+                                    Box(
+                                        modifier = Modifier
+                                            .align(Alignment.BottomCenter)
+                                            .padding(bottom = 16.dp)
+                                    ) {
+                                        Surface(
+                                            onClick = {
+                                                autoScrollEnabled = true
+                                                scope.launch {
+                                                    val totalCount = chatUiState.messages.size + if (chatUiState.isStreaming) 1 else 0
+                                                    if (totalCount > 0) {
+                                                        listState.animateScrollToItem(totalCount - 1)
+                                                    }
+                                                }
+                                            },
+                                            shape = RoundedCornerShape(20.dp),
+                                            color = MaterialTheme.colorScheme.primaryContainer,
+                                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                            shadowElevation = 6.dp,
+                                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+                                            modifier = Modifier.testTag("jump_to_bottom_button")
+                                        ) {
+                                            Row(
+                                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Outlined.ArrowDownward,
+                                                    contentDescription = "Jump to bottom",
+                                                    modifier = Modifier.size(16.dp)
+                                                )
+                                                Spacer(modifier = Modifier.width(6.dp))
+                                                Text("Jump to bottom", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

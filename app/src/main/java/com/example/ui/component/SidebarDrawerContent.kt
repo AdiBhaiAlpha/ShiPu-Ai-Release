@@ -75,16 +75,13 @@ fun SidebarDrawerContent(
     memoryCount: Int,
     onOpenMemories: () -> Unit,
     onOpenSettings: () -> Unit,
-    onLogout: () -> Unit
+    onLogout: () -> Unit,
+    onOpenAdmin: (() -> Unit)? = null
 ) {
     var conversationToRename by remember { mutableStateOf<Conversation?>(null) }
     var renameInput by remember { mutableStateOf("") }
 
-    val filtered = remember(conversations, searchQuery) {
-        if (searchQuery.isBlank()) conversations
-        else conversations.filter { it.title.contains(searchQuery, ignoreCase = true) }
-    }
-
+    val filtered = conversations
     val pinnedList = filtered.filter { it.isPinned }
     val regularList = filtered.filter { !it.isPinned }
 
@@ -360,6 +357,20 @@ fun SidebarDrawerContent(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(18.dp)
                         )
+                    }
+                }
+
+                if (userEmail?.trim()?.lowercase() == "chitronbhattacharjee@gmail.com" && onOpenAdmin != null) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Button(
+                        onClick = onOpenAdmin,
+                        modifier = Modifier.fillMaxWidth().testTag("admin_console_button"),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.errorContainer, contentColor = MaterialTheme.colorScheme.onErrorContainer),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(Icons.Outlined.Settings, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Super Admin Console", fontSize = 13.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
