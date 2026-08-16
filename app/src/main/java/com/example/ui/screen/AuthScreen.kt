@@ -163,7 +163,7 @@ fun AuthScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Image(
-                            painter = painterResource(id = R.drawable.ic_shipu_logo),
+                            painter = painterResource(id = R.mipmap.ic_launcher),
                             contentDescription = "ShiPu AI Logo",
                             modifier = Modifier.size(44.dp)
                         )

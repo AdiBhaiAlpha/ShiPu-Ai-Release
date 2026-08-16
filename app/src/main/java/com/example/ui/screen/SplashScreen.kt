@@ -91,7 +91,7 @@ fun SplashScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
-                        painter = painterResource(id = R.drawable.ic_shipu_logo),
+                        painter = painterResource(id = R.mipmap.ic_launcher),
                         contentDescription = "ShiPu AI Official Logo",
                         modifier = Modifier.size(62.dp)
                     )

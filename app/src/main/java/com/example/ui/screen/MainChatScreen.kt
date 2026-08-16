@@ -178,7 +178,7 @@ fun MainChatScreen(
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Image(
-                                                painter = painterResource(id = com.shipu.ai.R.drawable.ic_shipu_logo),
+                                                painter = painterResource(id = com.shipu.ai.R.mipmap.ic_launcher),
                                                 contentDescription = null,
                                                 modifier = Modifier.size(14.dp)
                                             )

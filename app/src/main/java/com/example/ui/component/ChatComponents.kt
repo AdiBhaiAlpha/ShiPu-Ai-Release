@@ -106,7 +106,7 @@ fun ChatMessageItem(
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.ic_shipu_logo),
+                    painter = painterResource(id = R.mipmap.ic_launcher),
                     contentDescription = "ShiPu AI Avatar",
                     modifier = Modifier.size(20.dp)
                 )
@@ -347,7 +347,7 @@ fun StreamingMessageItem(
             contentAlignment = Alignment.Center
         ) {
             Image(
-                painter = painterResource(id = R.drawable.ic_shipu_logo),
+                painter = painterResource(id = R.mipmap.ic_launcher),
                 contentDescription = "ShiPu AI Generating Response",
                 modifier = Modifier
                     .size(20.dp)
@@ -450,7 +450,7 @@ fun EmptyChatView(
             contentAlignment = Alignment.Center
         ) {
             Image(
-                painter = painterResource(id = R.drawable.ic_shipu_logo),
+                painter = painterResource(id = R.mipmap.ic_launcher),
                 contentDescription = "ShiPu AI Logo",
                 modifier = Modifier.size(44.dp)
             )
