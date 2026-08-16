@@ -41,7 +41,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "shipu_ai_db"
                 )
-                    .fallbackToDestructiveMigration()
+                    .fallbackToDestructiveMigration(dropAllTables = true)
                     .build()
                 INSTANCE = instance
                 instance
