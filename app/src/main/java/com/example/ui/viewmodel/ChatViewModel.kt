@@ -171,6 +171,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 createdAt = System.currentTimeMillis()
             )
 
+            // Save user message to database immediately
+            chatRepository.saveMessage(tempUserMsg)
+
             val generationId = "gen_${UUID.randomUUID().toString().replace("-", "").take(12)}"
 
             _uiState.update {

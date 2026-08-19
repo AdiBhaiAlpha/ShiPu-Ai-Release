@@ -338,24 +338,21 @@ class ChatRepository(
         existingUserMsgId: String? = null,
         generationId: String = "gen_${UUID.randomUUID().toString().replace("-", "").take(12)}"
     ): Flow<StreamEvent> = flow {
-        // 1. Create and persist User Message if not already persisted
-        val userMsgId = existingUserMsgId ?: run {
-            val newId = "msg_${UUID.randomUUID().toString().replace("-", "").take(12)}"
-            val userMsg = Message(
-                messageId = newId,
-                conversationId = conversationId,
-                userId = userId,
-                role = "user",
-                content = userMessageText,
-                createdAt = System.currentTimeMillis()
-            )
-            saveMessage(userMsg)
-            newId
-        }
+        // 1. Create and persist User Message to local DB and sync queue
+        val userMsgId = existingUserMsgId ?: "msg_${UUID.randomUUID().toString().replace("-", "").take(12)}"
+        val userMsg = Message(
+            messageId = userMsgId,
+            conversationId = conversationId,
+            userId = userId,
+            role = "user",
+            content = userMessageText,
+            createdAt = System.currentTimeMillis()
+        )
+        saveMessage(userMsg)
 
         // 2. Auto-extract long term memories if enabled (non-blocking / error-safe)
         val userPrefs = getUserPreferences(userId)
-        if (userPrefs.autoMemoryEnabled && existingUserMsgId == null) {
+        if (userPrefs.autoMemoryEnabled) {
             try {
                 memoryRepository.extractAndSaveMemoriesFromMessage(
                     userId = userId,
