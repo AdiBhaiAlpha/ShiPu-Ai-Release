@@ -37,6 +37,7 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
@@ -48,6 +49,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -104,41 +106,71 @@ fun MainChatScreen(
         }
     }
 
-    var autoScrollEnabled by remember { mutableStateOf(true) }
+    var autoFollow by remember { mutableStateOf(true) }
 
-    val isAtBottom = remember {
+    val isNearBottom by remember {
         derivedStateOf {
             val layoutInfo = listState.layoutInfo
-            val visibleItems = layoutInfo.visibleItemsInfo
-            val totalCount = chatUiState.messages.size + if (chatUiState.isStreaming) 1 else 0
-            if (totalCount == 0) true
-            else {
-                val lastVisibleItem = visibleItems.lastOrNull()
-                lastVisibleItem == null || lastVisibleItem.index >= totalCount - 2
+            val totalCount = layoutInfo.totalItemsCount
+            if (totalCount == 0) return@derivedStateOf true
+
+            val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()
+            if (lastVisibleItem == null) return@derivedStateOf true
+
+            val isLastItemVisible = lastVisibleItem.index >= totalCount - 2
+            val viewportEndOffset = layoutInfo.viewportEndOffset
+            val bottomOffset = lastVisibleItem.offset + lastVisibleItem.size
+
+            isLastItemVisible && (bottomOffset <= viewportEndOffset + 250)
+        }
+    }
+
+    // When user performs a manual scroll/drag gesture during streaming, check if they scrolled away from bottom
+    LaunchedEffect(listState) {
+        snapshotFlow { listState.isScrollInProgress }
+            .collect { isScrolling ->
+                if (isScrolling && chatUiState.isStreaming) {
+                    if (!isNearBottom) {
+                        autoFollow = false
+                    }
+                }
             }
+    }
+
+    // When user manually returns to bottom during streaming, re-enable autoFollow
+    LaunchedEffect(isNearBottom) {
+        if (chatUiState.isStreaming && isNearBottom) {
+            autoFollow = true
         }
     }
 
-    LaunchedEffect(listState.isScrollInProgress) {
-        if (listState.isScrollInProgress && chatUiState.isStreaming) {
-            if (!isAtBottom.value) {
-                autoScrollEnabled = false
-            }
-        }
-    }
-
-    LaunchedEffect(isAtBottom.value) {
-        if (isAtBottom.value) {
-            autoScrollEnabled = true
-        }
-    }
-
-    // Auto scroll list to bottom when new messages arrive or stream updates if enabled
-    LaunchedEffect(chatUiState.messages.size, chatUiState.streamingChunk) {
-        if (autoScrollEnabled) {
-            val totalCount = chatUiState.messages.size + if (chatUiState.isStreaming) 1 else 0
+    // Auto scroll list to bottom when streaming chunks or messages update, using lightweight scrollToItem if autoFollow is true
+    LaunchedEffect(chatUiState.streamingChunk, chatUiState.messages.size) {
+        if (chatUiState.isStreaming && autoFollow) {
+            val totalCount = chatUiState.messages.size + 1
             if (totalCount > 0) {
-                listState.animateScrollToItem(totalCount - 1)
+                listState.scrollToItem(totalCount - 1)
+            }
+        }
+    }
+
+    // When active conversation changes, reset autoFollow and scroll to bottom
+    LaunchedEffect(chatUiState.activeConversationId) {
+        autoFollow = true
+        val totalCount = chatUiState.messages.size + if (chatUiState.isStreaming) 1 else 0
+        if (totalCount > 0) {
+            listState.scrollToItem(totalCount - 1)
+        }
+    }
+
+    // When a search result message is targeted, scroll directly to that message item
+    LaunchedEffect(chatUiState.highlightedMessageId, chatUiState.messages) {
+        val targetId = chatUiState.highlightedMessageId
+        if (targetId != null) {
+            val idx = chatUiState.messages.indexOfFirst { it.messageId == targetId }
+            if (idx >= 0) {
+                autoFollow = false
+                listState.animateScrollToItem(idx)
             }
         }
     }
@@ -172,6 +204,11 @@ fun MainChatScreen(
                         activeConversationId = chatUiState.activeConversationId,
                         searchQuery = chatUiState.searchQuery,
                         onSearchQueryChanged = { chatViewModel.setSearchQuery(it) },
+                        searchResults = chatUiState.searchResults,
+                        onSelectSearchResult = { result ->
+                            chatViewModel.selectSearchResult(result)
+                            scope.launch { drawerState.close() }
+                        },
                         onSelectConversation = { convId ->
                             chatViewModel.selectConversation(convId)
                             scope.launch { drawerState.close() }
@@ -344,6 +381,20 @@ fun MainChatScreen(
                                         fontSize = 12.sp,
                                         modifier = Modifier.weight(1f)
                                     )
+                                    if (chatUiState.lastFailedPrompt != null && !chatUiState.isStreaming) {
+                                        TextButton(
+                                            onClick = { chatViewModel.retryLastFailed() },
+                                            modifier = Modifier.testTag("retry_failed_generation_button")
+                                        ) {
+                                            Text(
+                                                text = "Retry",
+                                                fontSize = 12.sp,
+                                                color = MaterialTheme.colorScheme.primary,
+                                                fontWeight = FontWeight.SemiBold
+                                            )
+                                        }
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                    }
                                     IconButton(
                                         onClick = { chatViewModel.clearError() },
                                         modifier = Modifier.size(24.dp)
@@ -398,12 +449,14 @@ fun MainChatScreen(
                                     isDarkTheme = chatUiState.isDarkTheme,
                                     isStreaming = chatUiState.isStreaming,
                                     streamingChunk = chatUiState.streamingChunk,
+                                    highlightedMessageId = chatUiState.highlightedMessageId,
+                                    searchHighlightKeyword = chatUiState.searchHighlightKeyword,
                                     listState = listState,
                                     onRegenerate = { chatViewModel.regenerateLastResponse() },
                                     modifier = Modifier.fillMaxSize()
                                 )
 
-                                if (!autoScrollEnabled && (!isAtBottom.value || chatUiState.isStreaming)) {
+                                if (!autoFollow && (!isNearBottom || chatUiState.isStreaming)) {
                                     Box(
                                         modifier = Modifier
                                             .align(Alignment.BottomCenter)
@@ -411,7 +464,7 @@ fun MainChatScreen(
                                     ) {
                                         Surface(
                                             onClick = {
-                                                autoScrollEnabled = true
+                                                autoFollow = true
                                                 scope.launch {
                                                     val totalCount = chatUiState.messages.size + if (chatUiState.isStreaming) 1 else 0
                                                     if (totalCount > 0) {
@@ -432,11 +485,11 @@ fun MainChatScreen(
                                             ) {
                                                 Icon(
                                                     imageVector = Icons.Outlined.ArrowDownward,
-                                                    contentDescription = "Jump to bottom",
+                                                    contentDescription = "Jump to latest",
                                                     modifier = Modifier.size(16.dp)
                                                 )
                                                 Spacer(modifier = Modifier.width(6.dp))
-                                                Text("Jump to bottom", fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                                Text("Jump to latest", fontSize = 12.sp, fontWeight = FontWeight.Medium)
                                             }
                                         }
                                     }

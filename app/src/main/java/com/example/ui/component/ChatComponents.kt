@@ -84,6 +84,8 @@ import com.example.ui.theme.LightUserBubble
 fun ChatMessageItem(
     message: Message,
     isDarkTheme: Boolean,
+    isHighlighted: Boolean = false,
+    highlightKeyword: String? = null,
     onRegenerate: () -> Unit
 ) {
     val isUser = message.role == "user"
@@ -131,12 +133,16 @@ fun ChatMessageItem(
                     !isUser && isDarkTheme -> DarkAssistantBubble
                     else -> LightAssistantBubble
                 },
-                border = BorderStroke(
-                    1.dp,
-                    if (isUser) MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
-                    else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                ),
-                shadowElevation = 0.dp
+                border = if (isHighlighted) {
+                    BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+                } else {
+                    BorderStroke(
+                        1.dp,
+                        if (isUser) MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
+                        else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                    )
+                },
+                shadowElevation = if (isHighlighted) 4.dp else 0.dp
             ) {
                 Box(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
                     MarkdownText(
@@ -397,6 +403,8 @@ fun ChatMessageList(
     modifier: Modifier = Modifier,
     isStreaming: Boolean = false,
     streamingChunk: String = "",
+    highlightedMessageId: String? = null,
+    searchHighlightKeyword: String? = null,
     listState: LazyListState = rememberLazyListState(),
     onRegenerate: () -> Unit = {}
 ) {
@@ -408,6 +416,8 @@ fun ChatMessageList(
             ChatMessageItem(
                 message = msg,
                 isDarkTheme = isDarkTheme,
+                isHighlighted = msg.messageId == highlightedMessageId,
+                highlightKeyword = if (msg.messageId == highlightedMessageId) searchHighlightKeyword else null,
                 onRegenerate = onRegenerate
             )
         }

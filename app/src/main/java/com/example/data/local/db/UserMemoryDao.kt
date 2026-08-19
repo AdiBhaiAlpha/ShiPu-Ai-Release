@@ -24,4 +24,7 @@ interface UserMemoryDao {
 
     @Query("DELETE FROM user_memories WHERE userId = :userId")
     suspend fun clearUserMemories(userId: String)
+
+    @Query("SELECT * FROM user_memories WHERE userId = :userId AND (fact LIKE '%' || :query || '%' OR category LIKE '%' || :query || '%') ORDER BY createdAt DESC")
+    suspend fun searchMemories(userId: String, query: String): List<UserMemoryEntity>
 }

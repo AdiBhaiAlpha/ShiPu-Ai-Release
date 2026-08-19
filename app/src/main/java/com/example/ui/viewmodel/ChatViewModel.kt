@@ -3,8 +3,13 @@ package com.example.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.data.model.ChatSearchResult
 import com.example.data.model.Conversation
+import com.example.data.model.GenerationErrorType
+import com.example.data.model.GenerationState
+import com.example.data.model.GenerationStatus
 import com.example.data.model.Message
+import com.example.data.model.StreamEvent
 import com.example.data.model.UserMemory
 import com.example.data.model.UserPreferences
 import com.example.data.repository.ChatRepository
@@ -16,20 +21,27 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.UUID
 
 data class ChatUiState(
     val conversations: List<Conversation> = emptyList(),
     val activeConversationId: String? = null,
     val messages: List<Message> = emptyList(),
     val streamingChunk: String = "",
+    val generationState: GenerationState = GenerationState(),
     val isStreaming: Boolean = false,
     val isLoadingConversations: Boolean = false,
     val isLoadingMessages: Boolean = false,
     val searchQuery: String = "",
+    val searchResults: List<ChatSearchResult> = emptyList(),
+    val highlightedMessageId: String? = null,
+    val searchHighlightKeyword: String? = null,
     val userMemories: List<UserMemory> = emptyList(),
     val userPreferences: UserPreferences? = null,
     val isDarkTheme: Boolean = true,
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val lastFailedPrompt: String? = null,
+    val lastFailedUserMsgId: String? = null
 )
 
 class ChatViewModel(application: Application) : AndroidViewModel(application) {
@@ -74,6 +86,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             if (convs.isNotEmpty() && _uiState.value.activeConversationId == null) {
                 selectConversation(convs.first().conversationId)
             }
+
+            // Trigger non-blocking cloud sync with MongoDB Atlas
+            com.example.data.sync.CloudSyncEngine.getInstance().triggerBackgroundSync(userId)
         }
     }
 
@@ -89,7 +104,10 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 isLoadingMessages = true,
                 streamingChunk = "",
                 isStreaming = false,
-                errorMessage = null
+                generationState = GenerationState(status = GenerationStatus.IDLE),
+                errorMessage = null,
+                lastFailedPrompt = null,
+                lastFailedUserMsgId = null
             )
         }
 
@@ -119,7 +137,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                     activeConversationId = newConv.conversationId,
                     messages = emptyList(),
                     streamingChunk = "",
-                    isStreaming = false
+                    isStreaming = false,
+                    generationState = GenerationState(status = GenerationStatus.IDLE),
+                    errorMessage = null,
+                    lastFailedPrompt = null,
+                    lastFailedUserMsgId = null
                 )
             }
         }
@@ -139,10 +161,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             val currentMsgs = _uiState.value.messages.toList()
-
-            // Immediate optimistic user message update
+            val userMsgId = "msg_${UUID.randomUUID().toString().replace("-", "").take(12)}"
             val tempUserMsg = Message(
-                messageId = "temp_user_${System.currentTimeMillis()}",
+                messageId = userMsgId,
                 conversationId = convId,
                 userId = userId,
                 role = "user",
@@ -150,51 +171,171 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 createdAt = System.currentTimeMillis()
             )
 
+            val generationId = "gen_${UUID.randomUUID().toString().replace("-", "").take(12)}"
+
             _uiState.update {
                 it.copy(
                     messages = currentMsgs + tempUserMsg,
                     isStreaming = true,
                     streamingChunk = "",
-                    errorMessage = null
+                    generationState = GenerationState(
+                        generationId = generationId,
+                        status = GenerationStatus.CONNECTING,
+                        conversationId = convId
+                    ),
+                    errorMessage = null,
+                    lastFailedPrompt = null,
+                    lastFailedUserMsgId = null
                 )
             }
 
-            // Start streaming from OpenRouter
-            val fullAssistantResponse = StringBuilder()
+            startStreamingPipeline(
+                conversationId = convId,
+                userId = userId,
+                userMessageText = cleanText,
+                userMsgId = userMsgId,
+                existingMessages = currentMsgs,
+                generationId = generationId
+            )
+        }
+    }
 
-            streamingJob = launch {
-                chatRepository.streamAssistantResponse(
-                    conversationId = convId,
-                    userId = userId,
-                    userMessageText = cleanText,
-                    existingMessages = currentMsgs
-                ).catch { e ->
-                    _uiState.update {
-                        it.copy(
-                            isStreaming = false,
-                            errorMessage = "Unable to reach ShiPu AI servers. Please check your network connection."
-                        )
-                    }
-                }.collect { chunk ->
-                    fullAssistantResponse.append(chunk)
-                    _uiState.update {
-                        it.copy(streamingChunk = fullAssistantResponse.toString())
-                    }
-                }
+    private fun startStreamingPipeline(
+        conversationId: String,
+        userId: String,
+        userMessageText: String,
+        userMsgId: String,
+        existingMessages: List<Message>,
+        generationId: String
+    ) {
+        streamingJob?.cancel()
+        val fullAssistantResponse = StringBuilder()
 
-                // Streaming finished: Reload complete persisted messages and conversations
-                val freshMsgs = chatRepository.getMessages(convId, userId)
-                val freshConvs = chatRepository.getConversations(userId)
-                val freshMemories = memoryRepository.getUserMemories(userId)
-
+        streamingJob = viewModelScope.launch {
+            chatRepository.streamAssistantResponseEvents(
+                conversationId = conversationId,
+                userId = userId,
+                userMessageText = userMessageText,
+                existingMessages = existingMessages,
+                existingUserMsgId = userMsgId,
+                generationId = generationId
+            ).catch { e ->
                 _uiState.update {
                     it.copy(
-                        messages = freshMsgs,
-                        conversations = freshConvs,
-                        userMemories = freshMemories,
-                        streamingChunk = "",
-                        isStreaming = false
+                        isStreaming = false,
+                        generationState = GenerationState(
+                            generationId = generationId,
+                            status = GenerationStatus.NETWORK_ERROR,
+                            conversationId = conversationId,
+                            errorMessage = "Unable to connect to AI server. Please check your network.",
+                            errorType = GenerationErrorType.NETWORK_UNAVAILABLE,
+                            isRetryable = true
+                        ),
+                        lastFailedPrompt = userMessageText,
+                        lastFailedUserMsgId = userMsgId
                     )
+                }
+            }.collect { event ->
+                when (event) {
+                    is StreamEvent.Connecting -> {
+                        _uiState.update {
+                            it.copy(
+                                isStreaming = true,
+                                generationState = it.generationState.copy(status = GenerationStatus.CONNECTING)
+                            )
+                        }
+                    }
+                    is StreamEvent.FirstTokenReceived -> {
+                        _uiState.update {
+                            it.copy(
+                                isStreaming = true,
+                                generationState = it.generationState.copy(status = GenerationStatus.STREAMING)
+                            )
+                        }
+                    }
+                    is StreamEvent.ChunkReceived -> {
+                        fullAssistantResponse.append(event.chunk)
+                        _uiState.update {
+                            it.copy(
+                                isStreaming = true,
+                                streamingChunk = fullAssistantResponse.toString(),
+                                generationState = it.generationState.copy(
+                                    status = GenerationStatus.STREAMING,
+                                    partialText = fullAssistantResponse.toString()
+                                )
+                            )
+                        }
+                    }
+                    is StreamEvent.StreamCompleted -> {
+                        // Reload fresh messages from DB
+                        val freshMsgs = chatRepository.getMessages(conversationId, userId)
+                        val freshConvs = chatRepository.getConversations(userId)
+                        val freshMemories = memoryRepository.getUserMemories(userId)
+
+                        _uiState.update {
+                            it.copy(
+                                messages = freshMsgs,
+                                conversations = freshConvs,
+                                userMemories = freshMemories,
+                                streamingChunk = "",
+                                isStreaming = false,
+                                generationState = GenerationState(
+                                    generationId = generationId,
+                                    status = GenerationStatus.COMPLETED,
+                                    conversationId = conversationId
+                                ),
+                                lastFailedPrompt = null,
+                                lastFailedUserMsgId = null
+                            )
+                        }
+                    }
+                    is StreamEvent.StreamFailed -> {
+                        val status = when (event.errorType) {
+                            GenerationErrorType.NETWORK_UNAVAILABLE,
+                            GenerationErrorType.CONNECTION_INTERRUPTED -> GenerationStatus.NETWORK_ERROR
+                            GenerationErrorType.TIMEOUT -> GenerationStatus.TIMEOUT
+                            GenerationErrorType.AUTHENTICATION_FAILED,
+                            GenerationErrorType.RATE_LIMITED,
+                            GenerationErrorType.CLIENT_ERROR,
+                            GenerationErrorType.SERVER_ERROR -> GenerationStatus.API_ERROR
+                            GenerationErrorType.PARSING_ERROR -> GenerationStatus.PARSING_ERROR
+                            GenerationErrorType.UNKNOWN -> GenerationStatus.UNKNOWN_ERROR
+                        }
+
+                        // If some text was streamed, persist it as a partial response so user doesn't lose it
+                        if (fullAssistantResponse.isNotBlank()) {
+                            val partialMsg = Message(
+                                messageId = "msg_${UUID.randomUUID().toString().replace("-", "").take(12)}",
+                                conversationId = conversationId,
+                                userId = userId,
+                                role = "assistant",
+                                content = fullAssistantResponse.toString(),
+                                createdAt = System.currentTimeMillis()
+                            )
+                            chatRepository.saveMessage(partialMsg)
+                        }
+
+                        val freshMsgs = chatRepository.getMessages(conversationId, userId)
+
+                        _uiState.update {
+                            it.copy(
+                                messages = freshMsgs,
+                                streamingChunk = "",
+                                isStreaming = false,
+                                generationState = GenerationState(
+                                    generationId = generationId,
+                                    status = status,
+                                    conversationId = conversationId,
+                                    errorMessage = event.errorMessage,
+                                    errorType = event.errorType,
+                                    isRetryable = event.isRetryable
+                                ),
+                                errorMessage = event.errorMessage,
+                                lastFailedPrompt = userMessageText,
+                                lastFailedUserMsgId = userMsgId
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -206,16 +347,17 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
         val userId = currentUserId ?: return
         val convId = _uiState.value.activeConversationId ?: return
-        val accumulatedChunk = _uiState.value.streamingChunk
+        val accumulatedChunk = _uiState.value.streamingChunk.trim()
 
         viewModelScope.launch {
             if (accumulatedChunk.isNotBlank()) {
+                // Save the generated partial text cleanly WITHOUT appending "[Stopped]" or fake text tags
                 val partialMsg = Message(
-                    messageId = "msg_${System.currentTimeMillis()}",
+                    messageId = "msg_${UUID.randomUUID().toString().replace("-", "").take(12)}",
                     conversationId = convId,
                     userId = userId,
                     role = "assistant",
-                    content = accumulatedChunk + " [Stopped]",
+                    content = accumulatedChunk,
                     createdAt = System.currentTimeMillis()
                 )
                 chatRepository.saveMessage(partialMsg)
@@ -226,9 +368,60 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 it.copy(
                     messages = freshMsgs,
                     streamingChunk = "",
-                    isStreaming = false
+                    isStreaming = false,
+                    generationState = GenerationState(
+                        status = GenerationStatus.USER_CANCELLED,
+                        conversationId = convId
+                    )
                 )
             }
+        }
+    }
+
+    fun retryLastFailed() {
+        val prompt = _uiState.value.lastFailedPrompt ?: return
+        val failedUserMsgId = _uiState.value.lastFailedUserMsgId
+        val userId = currentUserId ?: return
+        val convId = _uiState.value.activeConversationId ?: return
+
+        if (_uiState.value.isStreaming) return
+
+        viewModelScope.launch {
+            val currentMsgs = _uiState.value.messages.filter { it.messageId != failedUserMsgId }
+            val existingUserMsg = _uiState.value.messages.firstOrNull { it.messageId == failedUserMsgId }
+            val userMsg = existingUserMsg ?: Message(
+                messageId = failedUserMsgId ?: "msg_${UUID.randomUUID().toString().replace("-", "").take(12)}",
+                conversationId = convId,
+                userId = userId,
+                role = "user",
+                content = prompt,
+                createdAt = System.currentTimeMillis()
+            )
+
+            val generationId = "gen_${UUID.randomUUID().toString().replace("-", "").take(12)}"
+
+            _uiState.update {
+                it.copy(
+                    messages = currentMsgs + userMsg,
+                    isStreaming = true,
+                    streamingChunk = "",
+                    generationState = GenerationState(
+                        generationId = generationId,
+                        status = GenerationStatus.CONNECTING,
+                        conversationId = convId
+                    ),
+                    errorMessage = null
+                )
+            }
+
+            startStreamingPipeline(
+                conversationId = convId,
+                userId = userId,
+                userMessageText = prompt,
+                userMsgId = userMsg.messageId,
+                existingMessages = currentMsgs,
+                generationId = generationId
+            )
         }
     }
 
@@ -249,45 +442,30 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             msgs
         }
 
+        val generationId = "gen_${UUID.randomUUID().toString().replace("-", "").take(12)}"
+
         _uiState.update {
             it.copy(
                 messages = trimmedMsgs,
                 isStreaming = true,
                 streamingChunk = "",
+                generationState = GenerationState(
+                    generationId = generationId,
+                    status = GenerationStatus.CONNECTING,
+                    conversationId = convId
+                ),
                 errorMessage = null
             )
         }
 
-        val fullAssistantResponse = StringBuilder()
-        streamingJob = viewModelScope.launch {
-            chatRepository.streamAssistantResponse(
-                conversationId = convId,
-                userId = userId,
-                userMessageText = lastUserMsg.content,
-                existingMessages = trimmedMsgs.filter { it.messageId != lastUserMsg.messageId }
-            ).catch { e ->
-                _uiState.update {
-                    it.copy(
-                        isStreaming = false,
-                        errorMessage = "Failed to regenerate response. Please try again."
-                    )
-                }
-            }.collect { chunk ->
-                fullAssistantResponse.append(chunk)
-                _uiState.update {
-                    it.copy(streamingChunk = fullAssistantResponse.toString())
-                }
-            }
-
-            val freshMsgs = chatRepository.getMessages(convId, userId)
-            _uiState.update {
-                it.copy(
-                    messages = freshMsgs,
-                    streamingChunk = "",
-                    isStreaming = false
-                )
-            }
-        }
+        startStreamingPipeline(
+            conversationId = convId,
+            userId = userId,
+            userMessageText = lastUserMsg.content,
+            userMsgId = lastUserMsg.messageId,
+            existingMessages = trimmedMsgs.filter { it.messageId != lastUserMsg.messageId },
+            generationId = generationId
+        )
     }
 
     fun renameConversation(conversationId: String, newTitle: String) {
@@ -338,8 +516,36 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         _uiState.update { it.copy(searchQuery = query) }
         val userId = currentUserId ?: return
         viewModelScope.launch {
-            val results = chatRepository.searchConversations(userId, query)
-            _uiState.update { it.copy(conversations = results) }
+            if (query.isBlank()) {
+                val allConvs = chatRepository.getConversations(userId)
+                _uiState.update { it.copy(conversations = allConvs, searchResults = emptyList()) }
+            } else {
+                val results = chatRepository.searchConversationalContent(userId, query)
+                val convResults = chatRepository.searchConversations(userId, query)
+                _uiState.update { it.copy(conversations = convResults, searchResults = results) }
+            }
+        }
+    }
+
+    fun selectSearchResult(result: ChatSearchResult) {
+        val query = _uiState.value.searchQuery
+        if (result.conversationId.isNotBlank()) {
+            selectConversation(result.conversationId)
+            _uiState.update {
+                it.copy(
+                    highlightedMessageId = result.matchedMessageId,
+                    searchHighlightKeyword = query.ifBlank { null }
+                )
+            }
+        }
+    }
+
+    fun clearHighlight() {
+        _uiState.update {
+            it.copy(
+                highlightedMessageId = null,
+                searchHighlightKeyword = null
+            )
         }
     }
 
@@ -418,6 +624,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun clearError() {
-        _uiState.update { it.copy(errorMessage = null) }
+        _uiState.update {
+            it.copy(
+                errorMessage = null,
+                lastFailedPrompt = null,
+                lastFailedUserMsgId = null
+            )
+        }
     }
 }

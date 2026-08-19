@@ -21,4 +21,7 @@ interface MessageDao {
 
     @Query("SELECT DISTINCT conversationId FROM messages WHERE userId = :userId AND content LIKE '%' || :query || '%'")
     suspend fun searchConversationIdsByContent(userId: String, query: String): List<String>
+
+    @Query("SELECT * FROM messages WHERE userId = :userId AND content LIKE '%' || :query || '%' ORDER BY createdAt DESC")
+    suspend fun searchMessagesByContent(userId: String, query: String): List<MessageEntity>
 }

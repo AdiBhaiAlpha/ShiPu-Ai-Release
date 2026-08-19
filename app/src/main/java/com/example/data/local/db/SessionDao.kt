@@ -10,6 +10,9 @@ interface SessionDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertSession(session: SessionEntity)
 
+    @Query("SELECT * FROM sessions WHERE userId = :userId LIMIT 1")
+    suspend fun getSessionForUser(userId: String): SessionEntity?
+
     @Query("DELETE FROM sessions WHERE token = :token")
     suspend fun deleteSession(token: String)
 

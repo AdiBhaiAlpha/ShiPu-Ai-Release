@@ -57,7 +57,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.data.model.ChatSearchResult
 import com.example.data.model.Conversation
+import com.example.data.model.SearchMatchType
 
 @Composable
 fun SidebarDrawerContent(
@@ -65,6 +67,8 @@ fun SidebarDrawerContent(
     activeConversationId: String?,
     searchQuery: String,
     onSearchQueryChanged: (String) -> Unit,
+    searchResults: List<ChatSearchResult> = emptyList(),
+    onSelectSearchResult: (ChatSearchResult) -> Unit = {},
     onSelectConversation: (String) -> Unit,
     onNewChat: () -> Unit,
     onRenameConversation: (String, String) -> Unit,
@@ -153,7 +157,7 @@ fun SidebarDrawerContent(
             OutlinedTextField(
                 value = searchQuery,
                 onValueChange = onSearchQueryChanged,
-                placeholder = { Text("Search chats...", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                placeholder = { Text("Search chats & memories...", fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                 leadingIcon = {
                     Icon(
                         imageVector = Icons.Outlined.Search,
@@ -175,73 +179,121 @@ fun SidebarDrawerContent(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Conversation Lists
+            // Conversation Lists or Conversational Search Results
             LazyColumn(
                 modifier = Modifier.weight(1f)
             ) {
-                if (pinnedList.isNotEmpty()) {
+                if (searchQuery.isNotBlank() && searchResults.isNotEmpty()) {
                     item {
                         Text(
-                            text = "PINNED",
+                            text = "SEARCH RESULTS (${searchResults.size})",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(bottom = 6.dp)
+                        )
+                    }
+                    items(searchResults, key = { "sr_${it.matchType}_${it.conversationId}_${it.matchedMessageId ?: it.snippetText.hashCode()}" }) { result ->
+                        SearchResultDrawerItem(
+                            result = result,
+                            query = searchQuery,
+                            onSelect = { onSelectSearchResult(result) }
+                        )
+                    }
+                } else {
+                    if (pinnedList.isNotEmpty()) {
+                        item {
+                            Text(
+                                text = "PINNED",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 6.dp)
+                            )
+                        }
+                        items(pinnedList, key = { "pinned_${it.conversationId}" }) { conv ->
+                            ConversationDrawerItem(
+                                conversation = conv,
+                                isActive = conv.conversationId == activeConversationId,
+                                onSelect = { onSelectConversation(conv.conversationId) },
+                                onRenameClick = {
+                                    conversationToRename = conv
+                                    renameInput = conv.title
+                                },
+                                onPinToggle = { onTogglePin(conv.conversationId, conv.isPinned) },
+                                onDeleteClick = { onDeleteConversation(conv.conversationId) }
+                            )
+                        }
+                        item { Spacer(modifier = Modifier.height(12.dp)) }
+                    }
+
+                    item {
+                        Text(
+                            text = "RECENT CHATS",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 6.dp)
                         )
                     }
-                    items(pinnedList, key = { "pinned_${it.conversationId}" }) { conv ->
-                        ConversationDrawerItem(
-                            conversation = conv,
-                            isActive = conv.conversationId == activeConversationId,
-                            onSelect = { onSelectConversation(conv.conversationId) },
-                            onRenameClick = {
-                                conversationToRename = conv
-                                renameInput = conv.title
-                            },
-                            onPinToggle = { onTogglePin(conv.conversationId, conv.isPinned) },
-                            onDeleteClick = { onDeleteConversation(conv.conversationId) }
-                        )
-                    }
-                    item { Spacer(modifier = Modifier.height(12.dp)) }
-                }
 
-                item {
-                    Text(
-                        text = "RECENT CHATS",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 6.dp)
-                    )
-                }
-
-                if (regularList.isEmpty() && pinnedList.isEmpty()) {
-                    item {
-                        Text(
-                            text = "No conversations found",
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 12.dp)
-                        )
-                    }
-                } else {
-                    items(regularList, key = { conv -> conv.conversationId }) { conv ->
-                        ConversationDrawerItem(
-                            conversation = conv,
-                            isActive = conv.conversationId == activeConversationId,
-                            onSelect = { onSelectConversation(conv.conversationId) },
-                            onRenameClick = {
-                                conversationToRename = conv
-                                renameInput = conv.title
-                            },
-                            onPinToggle = { onTogglePin(conv.conversationId, conv.isPinned) },
-                            onDeleteClick = { onDeleteConversation(conv.conversationId) }
-                        )
+                    if (regularList.isEmpty() && pinnedList.isEmpty()) {
+                        item {
+                            Text(
+                                text = if (searchQuery.isNotBlank()) "No matching results found" else "No conversations found",
+                                fontSize = 13.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(vertical = 12.dp)
+                            )
+                        }
+                    } else {
+                        items(regularList, key = { conv -> conv.conversationId }) { conv ->
+                            ConversationDrawerItem(
+                                conversation = conv,
+                                isActive = conv.conversationId == activeConversationId,
+                                onSelect = { onSelectConversation(conv.conversationId) },
+                                onRenameClick = {
+                                    conversationToRename = conv
+                                    renameInput = conv.title
+                                },
+                                onPinToggle = { onTogglePin(conv.conversationId, conv.isPinned) },
+                                onDeleteClick = { onDeleteConversation(conv.conversationId) }
+                            )
+                        }
                     }
                 }
             }
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = MaterialTheme.colorScheme.outline)
+
+            // MongoDB Cloud Sync Status Badge
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 10.dp),
+                shape = RoundedCornerShape(6.dp),
+                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.6f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(7.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.primary)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "MongoDB Atlas: Cloud Synced",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
 
             // User Profile & Settings
             Column {
@@ -502,6 +554,96 @@ private fun ConversationDrawerItem(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun SearchResultDrawerItem(
+    result: ChatSearchResult,
+    query: String,
+    onSelect: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 3.dp)
+            .clickable { onSelect() }
+            .testTag("search_result_item_${result.conversationId}"),
+        shape = RoundedCornerShape(8.dp),
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+    ) {
+        Column(
+            modifier = Modifier.padding(10.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                val badgeText = when (result.matchType) {
+                    SearchMatchType.TITLE -> "Chat"
+                    SearchMatchType.MESSAGE_USER -> "You"
+                    SearchMatchType.MESSAGE_ASSISTANT -> "ShiPu AI"
+                    SearchMatchType.MEMORY -> "Memory"
+                }
+                Surface(
+                    shape = RoundedCornerShape(4.dp),
+                    color = MaterialTheme.colorScheme.primaryContainer
+                ) {
+                    Text(
+                        text = badgeText,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(6.dp))
+
+                Text(
+                    text = result.conversationTitle,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Highlighted snippet text
+            val annotatedSnippet = androidx.compose.ui.text.buildAnnotatedString {
+                val text = result.snippetText
+                val idx = text.indexOf(query, ignoreCase = true)
+                if (idx != -1 && query.isNotBlank()) {
+                    append(text.substring(0, idx))
+                    pushStyle(
+                        androidx.compose.ui.text.SpanStyle(
+                            background = MaterialTheme.colorScheme.primary.copy(alpha = 0.25f),
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    )
+                    append(text.substring(idx, idx + query.length))
+                    pop()
+                    append(text.substring(idx + query.length))
+                } else {
+                    append(text)
+                }
+            }
+
+            Text(
+                text = annotatedSnippet,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                lineHeight = 16.sp
+            )
         }
     }
 }

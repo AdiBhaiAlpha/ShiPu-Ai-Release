@@ -17,9 +17,11 @@ import com.example.ShiPuAiApplication
         SystemPromptEntity::class,
         KnowledgeEntity::class,
         AdminConfigEntity::class,
-        AdminAuditLogEntity::class
+        AdminAuditLogEntity::class,
+        SyncOperationEntity::class,
+        SyncMetadataEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -34,6 +36,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun knowledgeDao(): KnowledgeDao
     abstract fun adminConfigDao(): AdminConfigDao
     abstract fun adminAuditLogDao(): AdminAuditLogDao
+    abstract fun syncOperationDao(): SyncOperationDao
+    abstract fun syncMetadataDao(): SyncMetadataDao
 
     companion object {
         @Volatile

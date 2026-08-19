@@ -27,4 +27,7 @@ interface ConversationDao {
 
     @Query("DELETE FROM conversations WHERE userId = :userId")
     suspend fun deleteUserConversations(userId: String)
+
+    @Query("SELECT * FROM conversations WHERE userId = :userId AND isArchived = 0 AND title LIKE '%' || :query || '%' ORDER BY updatedAt DESC")
+    suspend fun searchConversationsByTitle(userId: String, query: String): List<ConversationEntity>
 }

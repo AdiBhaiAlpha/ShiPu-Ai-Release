@@ -5,14 +5,17 @@ import android.util.Log
 import com.example.data.local.db.AppDatabase
 import com.example.data.local.db.UserMemoryEntity
 import com.example.data.model.UserMemory
+import com.example.data.sync.CloudSyncEngine
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.json.JSONObject
 import java.util.UUID
 
 class MemoryRepository(
     context: Context? = null
 ) {
     private val db: AppDatabase by lazy { AppDatabase.getInstance(context) }
+    private val syncEngine: CloudSyncEngine by lazy { CloudSyncEngine.getInstance(context) }
 
     suspend fun getUserMemories(userId: String): List<UserMemory> = withContext(Dispatchers.IO) {
         try {
@@ -51,6 +54,23 @@ class MemoryRepository(
 
             db.userMemoryDao().insertMemory(UserMemoryEntity.fromUserMemory(memory))
             Log.d("MemoryRepository", "Saved memory for $userId: $cleanFact")
+
+            val payload = JSONObject().apply {
+                put("fact", memory.fact)
+                put("category", memory.category)
+                put("sourceMessageId", memory.sourceMessageId)
+                put("createdAt", memory.createdAt)
+                put("updatedAt", memory.updatedAt)
+            }.toString()
+
+            syncEngine.enqueueOperation(
+                userId = userId,
+                entityType = "MEMORY",
+                entityId = memory.memoryId,
+                operationType = "UPSERT",
+                payloadJson = payload
+            )
+
             memory
         } catch (e: Exception) {
             Log.e("MemoryRepository", "Error adding memory for $userId", e)
@@ -65,12 +85,27 @@ class MemoryRepository(
         newCategory: String
     ): Boolean = withContext(Dispatchers.IO) {
         try {
+            val now = System.currentTimeMillis()
             db.userMemoryDao().updateMemory(
                 memoryId = memoryId,
                 userId = userId,
                 fact = newFact.trim(),
                 category = newCategory,
-                updatedAt = System.currentTimeMillis()
+                updatedAt = now
+            )
+
+            val payload = JSONObject().apply {
+                put("fact", newFact.trim())
+                put("category", newCategory)
+                put("updatedAt", now)
+            }.toString()
+
+            syncEngine.enqueueOperation(
+                userId = userId,
+                entityType = "MEMORY",
+                entityId = memoryId,
+                operationType = "UPSERT",
+                payloadJson = payload
             )
             true
         } catch (e: Exception) {
@@ -82,6 +117,14 @@ class MemoryRepository(
     suspend fun deleteMemory(memoryId: String, userId: String): Boolean = withContext(Dispatchers.IO) {
         try {
             db.userMemoryDao().deleteMemory(memoryId, userId)
+
+            syncEngine.enqueueOperation(
+                userId = userId,
+                entityType = "MEMORY",
+                entityId = memoryId,
+                operationType = "DELETE",
+                payloadJson = "{}"
+            )
             true
         } catch (e: Exception) {
             Log.e("MemoryRepository", "Error deleting memory $memoryId", e)
@@ -91,7 +134,17 @@ class MemoryRepository(
 
     suspend fun clearAllMemories(userId: String): Boolean = withContext(Dispatchers.IO) {
         try {
+            val existing = db.userMemoryDao().getMemoriesForUser(userId)
             db.userMemoryDao().clearUserMemories(userId)
+            for (mem in existing) {
+                syncEngine.enqueueOperation(
+                    userId = userId,
+                    entityType = "MEMORY",
+                    entityId = mem.memoryId,
+                    operationType = "DELETE",
+                    payloadJson = "{}"
+                )
+            }
             Log.d("MemoryRepository", "Cleared memories for user $userId")
             true
         } catch (e: Exception) {

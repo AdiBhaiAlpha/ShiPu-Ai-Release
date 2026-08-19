@@ -2,12 +2,16 @@ package com.example.data.repository
 
 import android.content.Context
 import android.util.Log
+import com.example.data.local.SessionManager
 import com.example.data.local.db.*
+import com.example.data.remote.CloudSyncService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 class AdminRepository(context: Context? = null) {
     private val db = AppDatabase.getInstance(context)
+    private val cloudService = CloudSyncService.getInstance()
+    private val sessionManager = context?.let { SessionManager(it) }
 
     suspend fun verifySuperAdmin(userId: String): Boolean = withContext(Dispatchers.IO) {
         val user = db.userDao().getUserById(userId) ?: return@withContext false
@@ -35,6 +39,13 @@ class AdminRepository(context: Context? = null) {
             updatedBy = userEmail
         )
         db.systemPromptDao().savePrompt(entity)
+        val token = db.sessionDao().getSessionForUser(userId)?.token ?: sessionManager?.getActiveToken() ?: "admin_token"
+        try {
+            cloudService.saveSystemPrompt(userId, token, entity)
+        } catch (e: Throwable) {
+            Log.w("AdminRepository", "Cloud save system prompt error: ${e.message}")
+        }
+
         db.adminAuditLogDao().insertLog(
             AdminAuditLogEntity(
                 action = "System prompt updated",
@@ -77,6 +88,13 @@ class AdminRepository(context: Context? = null) {
             updatedAt = System.currentTimeMillis()
         )
         db.knowledgeDao().insertOrUpdate(entity)
+        val token = db.sessionDao().getSessionForUser(userId)?.token ?: sessionManager?.getActiveToken() ?: "admin_token"
+        try {
+            cloudService.saveKnowledge(userId, token, entity)
+        } catch (e: Throwable) {
+            Log.w("AdminRepository", "Cloud save knowledge error: ${e.message}")
+        }
+
         db.adminAuditLogDao().insertLog(
             AdminAuditLogEntity(
                 action = if (existing == null) "Knowledge entry created" else "Knowledge entry updated",
@@ -90,6 +108,13 @@ class AdminRepository(context: Context? = null) {
     suspend fun deleteKnowledge(userId: String, userEmail: String, knowledgeId: String): Boolean = withContext(Dispatchers.IO) {
         if (!verifySuperAdmin(userId)) return@withContext false
         db.knowledgeDao().deleteKnowledge(knowledgeId)
+        val token = db.sessionDao().getSessionForUser(userId)?.token ?: sessionManager?.getActiveToken() ?: "admin_token"
+        try {
+            cloudService.deleteKnowledge(userId, token, knowledgeId, userEmail)
+        } catch (e: Throwable) {
+            Log.w("AdminRepository", "Cloud delete knowledge error: ${e.message}")
+        }
+
         db.adminAuditLogDao().insertLog(
             AdminAuditLogEntity(
                 action = "Knowledge entry deleted",
@@ -125,6 +150,13 @@ class AdminRepository(context: Context? = null) {
             updatedBy = userEmail
         )
         db.adminConfigDao().saveConfig(entity)
+        val token = db.sessionDao().getSessionForUser(userId)?.token ?: sessionManager?.getActiveToken() ?: "admin_token"
+        try {
+            cloudService.saveAdminConfig(userId, token, entity)
+        } catch (e: Throwable) {
+            Log.w("AdminRepository", "Cloud save admin config error: ${e.message}")
+        }
+
         db.adminAuditLogDao().insertLog(
             AdminAuditLogEntity(
                 action = "OpenRouter key rotated",
