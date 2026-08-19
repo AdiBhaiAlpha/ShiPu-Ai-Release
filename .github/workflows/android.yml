@@ -1,4 +1,4 @@
-name: Android CI & APK Build
+name: ShiPu AI Android Build (APK & AAB)
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    name: Build Android APK
+    name: Build Android APKs & AAB Bundles
     runs-on: ubuntu-latest
 
     steps:
@@ -53,12 +53,36 @@ jobs:
             base64 -d debug.keystore.base64 > debug.keystore || true
           fi
 
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace
+      - name: Build Debug & Release APKs
+        run: ./gradlew assembleDebug assembleRelease --stacktrace
+
+      - name: Build Debug & Release AAB Bundles (Android App Bundle)
+        run: ./gradlew bundleDebug bundleRelease --stacktrace
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
         with:
           name: shipu-ai-debug-apk
           path: app/build/outputs/apk/debug/*.apk
-          retention-days: 14
+          retention-days: 30
+
+      - name: Upload Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: shipu-ai-release-apk
+          path: app/build/outputs/apk/release/*.apk
+          retention-days: 30
+
+      - name: Upload Debug AAB Bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: shipu-ai-debug-aab
+          path: app/build/outputs/bundle/debug/*.aab
+          retention-days: 30
+
+      - name: Upload Release AAB Bundle (Play Store Ready)
+        uses: actions/upload-artifact@v4
+        with:
+          name: shipu-ai-release-aab
+          path: app/build/outputs/bundle/release/*.aab
+          retention-days: 30

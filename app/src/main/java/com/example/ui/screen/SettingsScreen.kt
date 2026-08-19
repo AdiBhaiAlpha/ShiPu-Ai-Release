@@ -369,8 +369,8 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // SECTION 4: CUSTOM INSTRUCTIONS
-            SettingsSectionHeader(title = "CUSTOM INSTRUCTIONS", icon = Icons.Outlined.Psychology)
+            // SECTION 4: PERSONALIZED INSTRUCTIONS
+            SettingsSectionHeader(title = "PERSONALIZED INSTRUCTIONS", icon = Icons.Outlined.Psychology)
             Spacer(modifier = Modifier.height(8.dp))
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -380,13 +380,13 @@ fun SettingsScreen(
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Text(
-                        text = "Personalized Instructions",
+                        text = "Custom Instructions",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
-                        text = "Provide personalized rules or guidelines for ShiPu AI (e.g. 'Keep explanations concise and structured').",
+                        text = "Add custom instructions for how ShiPu AI should respond to you (e.g., tone, preferred style, formatting). Leave blank to use default settings.",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -396,7 +396,12 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = customInstructions,
                         onValueChange = { customInstructions = it },
-                        placeholder = { Text("What would you like ShiPu AI to know about you?", fontSize = 12.sp) },
+                        placeholder = {
+                            Text(
+                                "e.g. Keep answers structured and concise, respond in Bengali when asked in Bengali, use bullet points...",
+                                fontSize = 12.sp
+                            )
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(110.dp)
@@ -423,7 +428,7 @@ fun SettingsScreen(
                             Icon(imageVector = Icons.Outlined.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
-                                text = "Note: Custom instructions complement user responses and cannot overwrite or disable the core ShiPu AI safety framework.",
+                                text = "Note: Personalized instructions guide response formatting and cannot override or disable the core ShiPu AI safety framework.",
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -436,7 +441,7 @@ fun SettingsScreen(
                         onClick = {
                             val updated = currentPrefs.copy(customSystemPrompt = customInstructions)
                             chatViewModel.saveUserPreferences(updated)
-                            Toast.makeText(context, "Instructions saved successfully!", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Personalized instructions saved!", Toast.LENGTH_SHORT).show()
                         },
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier

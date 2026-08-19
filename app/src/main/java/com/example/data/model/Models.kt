@@ -48,7 +48,7 @@ data class UserPreferences(
     val defaultModel: String = "openrouter/free",
     val temperature: Float = 0.7f,
     val maxTokens: Int = 2048,
-    val customSystemPrompt: String = "You are ShiPu AI, an empathetic, highly intelligent personal AI assistant.",
+    val customSystemPrompt: String = "",
     val autoMemoryEnabled: Boolean = true,
     val updatedAt: Long = System.currentTimeMillis()
 )

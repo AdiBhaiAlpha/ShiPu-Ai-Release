@@ -127,19 +127,26 @@ fun MainChatScreen(
             val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()
             if (lastVisibleItem == null) return@derivedStateOf true
 
-            val isLastItemVisible = lastVisibleItem.index >= totalCount - 2
+            val isLastItemVisible = lastVisibleItem.index >= totalCount - 1
             val viewportEndOffset = layoutInfo.viewportEndOffset
             val bottomOffset = lastVisibleItem.offset + lastVisibleItem.size
 
-            isLastItemVisible && (bottomOffset <= viewportEndOffset + 250)
+            isLastItemVisible && (bottomOffset <= viewportEndOffset + 150)
         }
     }
 
-    // When user performs a manual scroll/drag gesture during streaming, check if they scrolled away from bottom
+    // Reset auto-follow when user sends a new message or streaming starts
+    LaunchedEffect(chatUiState.isStreaming) {
+        if (chatUiState.isStreaming) {
+            autoFollow = true
+        }
+    }
+
+    // When user performs a manual scroll/drag gesture during streaming or viewing, check if they scrolled away from bottom
     LaunchedEffect(listState) {
         snapshotFlow { listState.isScrollInProgress }
             .collect { isScrolling ->
-                if (isScrolling && chatUiState.isStreaming) {
+                if (isScrolling) {
                     if (!isNearBottom) {
                         autoFollow = false
                     }
@@ -147,9 +154,9 @@ fun MainChatScreen(
             }
     }
 
-    // When user manually returns to bottom during streaming, re-enable autoFollow
+    // When user returns to bottom, re-enable autoFollow
     LaunchedEffect(isNearBottom) {
-        if (chatUiState.isStreaming && isNearBottom) {
+        if (isNearBottom) {
             autoFollow = true
         }
     }

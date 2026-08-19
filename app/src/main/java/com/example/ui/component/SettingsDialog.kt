@@ -192,13 +192,13 @@ fun SettingsDialog(
                 }
 
                 Spacer(modifier = Modifier.height(8.dp))
-                Text("Custom Instructions", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
-                Text("Provide personalized instructions for ShiPu AI (e.g. 'Keep answers concise')", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Personalized Instructions", fontSize = 13.sp, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
+                Text("Add custom instructions for how ShiPu AI should respond (leave blank for default)", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(modifier = Modifier.height(6.dp))
                 OutlinedTextField(
                     value = systemPrompt,
                     onValueChange = { systemPrompt = it },
-                    placeholder = { Text("What would you like ShiPu AI to know about you?", fontSize = 12.sp) },
+                    placeholder = { Text("e.g. Keep explanations structured and concise...", fontSize = 12.sp) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(90.dp)

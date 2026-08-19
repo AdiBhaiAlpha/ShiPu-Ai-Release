@@ -270,13 +270,13 @@ fun AuthScreen(
                                             imageVector = Icons.Outlined.Person,
                                             contentDescription = null,
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(18.dp)
+                                            modifier = Modifier.size(20.dp)
                                         )
                                     },
                                     singleLine = true,
+                                    textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp, lineHeight = 22.sp),
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(54.dp)
                                         .testTag("name_input"),
                                     shape = RoundedCornerShape(10.dp),
                                     colors = OutlinedTextFieldDefaults.colors(
@@ -289,7 +289,7 @@ fun AuthScreen(
                                     )
                                 )
 
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(14.dp))
                             }
 
                             // Email Address Field
@@ -306,7 +306,7 @@ fun AuthScreen(
                                         imageVector = Icons.Outlined.Email,
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(18.dp)
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 },
                                 keyboardOptions = KeyboardOptions(
@@ -314,9 +314,9 @@ fun AuthScreen(
                                     imeAction = ImeAction.Next
                                 ),
                                 singleLine = true,
+                                textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp, lineHeight = 22.sp),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(54.dp)
                                     .testTag("email_input"),
                                 shape = RoundedCornerShape(10.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
@@ -329,7 +329,7 @@ fun AuthScreen(
                                 )
                             )
 
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(14.dp))
 
                             // Password Field
                             OutlinedTextField(
@@ -345,7 +345,7 @@ fun AuthScreen(
                                         imageVector = Icons.Outlined.Lock,
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        modifier = Modifier.size(18.dp)
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 },
                                 trailingIcon = {
@@ -357,7 +357,7 @@ fun AuthScreen(
                                             imageVector = if (passwordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
                                             contentDescription = if (passwordVisible) "Hide password" else "Show password",
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(18.dp)
+                                            modifier = Modifier.size(20.dp)
                                         )
                                     }
                                 },
@@ -369,7 +369,7 @@ fun AuthScreen(
                                 keyboardActions = KeyboardActions(
                                     onDone = {
                                         if (!isSignUp) {
-                                            if (email.isBlank() || password.isBlank()) {
+                                             if (email.isBlank() || password.isBlank()) {
                                                 localValidationError = "Please fill in all required fields"
                                             } else {
                                                 authViewModel.login(email, password)
@@ -378,9 +378,9 @@ fun AuthScreen(
                                     }
                                 ),
                                 singleLine = true,
+                                textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp, lineHeight = 22.sp),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .height(54.dp)
                                     .testTag("password_input"),
                                 shape = RoundedCornerShape(10.dp),
                                 colors = OutlinedTextFieldDefaults.colors(
@@ -394,7 +394,7 @@ fun AuthScreen(
                             )
 
                             if (isSignUp) {
-                                Spacer(modifier = Modifier.height(12.dp))
+                                Spacer(modifier = Modifier.height(14.dp))
 
                                 // Confirm Password Field
                                 OutlinedTextField(
@@ -410,7 +410,7 @@ fun AuthScreen(
                                             imageVector = Icons.Outlined.Lock,
                                             contentDescription = null,
                                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(18.dp)
+                                            modifier = Modifier.size(20.dp)
                                         )
                                     },
                                     trailingIcon = {
@@ -422,7 +422,7 @@ fun AuthScreen(
                                                 imageVector = if (confirmPasswordVisible) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
                                                 contentDescription = if (confirmPasswordVisible) "Hide password" else "Show password",
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                modifier = Modifier.size(18.dp)
+                                                modifier = Modifier.size(20.dp)
                                             )
                                         }
                                     },
@@ -443,9 +443,9 @@ fun AuthScreen(
                                         }
                                     ),
                                     singleLine = true,
+                                    textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp, lineHeight = 22.sp),
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(54.dp)
                                         .testTag("confirm_password_input"),
                                     shape = RoundedCornerShape(10.dp),
                                     colors = OutlinedTextFieldDefaults.colors(
@@ -656,6 +656,7 @@ fun AuthScreen(
                             onValueChange = { resetEmail = it },
                             label = { Text("Email address", style = MaterialTheme.typography.bodySmall) },
                             singleLine = true,
+                            textStyle = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp, lineHeight = 22.sp),
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(10.dp),
                             colors = OutlinedTextFieldDefaults.colors(
