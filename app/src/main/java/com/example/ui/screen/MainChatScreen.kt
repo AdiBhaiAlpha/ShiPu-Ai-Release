@@ -7,13 +7,23 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.isImeVisible
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -175,6 +185,24 @@ fun MainChatScreen(
         }
     }
 
+    // Preserve scroll position when keyboard appears/disappears
+    @OptIn(ExperimentalLayoutApi::class)
+    val isImeVisible = WindowInsets.isImeVisible
+    var wasImeVisible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isImeVisible) {
+        if (isImeVisible && !wasImeVisible) {
+            // When keyboard opens, if user was already at the latest message or following stream, keep it visible above composer
+            if (isNearBottom || autoFollow) {
+                val totalCount = chatUiState.messages.size + if (chatUiState.isStreaming) 1 else 0
+                if (totalCount > 0) {
+                    listState.scrollToItem(totalCount - 1)
+                }
+            }
+        }
+        wasImeVisible = isImeVisible
+    }
+
     if (showAdminScreen) {
         AdminDashboardScreen(
             adminViewModel = remember {
@@ -250,6 +278,7 @@ fun MainChatScreen(
             }
         ) {
             Scaffold(
+                contentWindowInsets = WindowInsets.statusBars,
                 topBar = {
                     Column {
                         TopAppBar(
@@ -332,23 +361,32 @@ fun MainChatScreen(
                             },
                             colors = TopAppBarDefaults.topAppBarColors(
                                 containerColor = MaterialTheme.colorScheme.surface
-                            )
+                            ),
+                            windowInsets = TopAppBarDefaults.windowInsets
                         )
                         HorizontalDivider(color = MaterialTheme.colorScheme.outline)
                     }
                 },
                 bottomBar = {
-                    ChatInputBar(
-                        inputPrompt = inputPrompt,
-                        onInputChanged = { inputPrompt = it },
-                        onSend = {
-                            val text = inputPrompt
-                            inputPrompt = ""
-                            chatViewModel.sendMessage(text)
-                        },
-                        isStreaming = chatUiState.isStreaming,
-                        onStop = { chatViewModel.stopGeneration() }
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .windowInsetsPadding(
+                                WindowInsets.navigationBars.union(WindowInsets.ime)
+                            )
+                    ) {
+                        ChatInputBar(
+                            inputPrompt = inputPrompt,
+                            onInputChanged = { inputPrompt = it },
+                            onSend = {
+                                val text = inputPrompt
+                                inputPrompt = ""
+                                chatViewModel.sendMessage(text)
+                            },
+                            isStreaming = chatUiState.isStreaming,
+                            onStop = { chatViewModel.stopGeneration() }
+                        )
+                    }
                 }
             ) { innerPadding ->
                 Box(

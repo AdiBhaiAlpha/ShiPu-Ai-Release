@@ -526,18 +526,19 @@ fun ChatInputBar(
     onInputChanged: (String) -> Unit,
     onSend: () -> Unit,
     isStreaming: Boolean,
-    onStop: () -> Unit
+    onStop: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.background,
         shadowElevation = 0.dp
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.Bottom
         ) {
             OutlinedTextField(
                 value = inputPrompt,
@@ -571,6 +572,7 @@ fun ChatInputBar(
                 IconButton(
                     onClick = onStop,
                     modifier = Modifier
+                        .padding(bottom = 6.dp)
                         .size(40.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary)
@@ -589,6 +591,7 @@ fun ChatInputBar(
                     onClick = onSend,
                     enabled = hasText,
                     modifier = Modifier
+                        .padding(bottom = 6.dp)
                         .size(40.dp)
                         .clip(CircleShape)
                         .background(

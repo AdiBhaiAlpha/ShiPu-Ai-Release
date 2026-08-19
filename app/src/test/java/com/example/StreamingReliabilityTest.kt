@@ -4,7 +4,6 @@ import com.example.data.model.ChatSearchResult
 import com.example.data.model.GenerationErrorType
 import com.example.data.model.GenerationState
 import com.example.data.model.GenerationStatus
-import com.example.data.model.Message
 import com.example.data.model.SearchMatchType
 import com.example.data.model.StreamEvent
 import org.junit.Assert.assertEquals
@@ -22,9 +21,9 @@ class StreamingReliabilityTest {
         val stateStreaming = stateIdle.copy(
             generationId = "gen_123",
             status = GenerationStatus.STREAMING,
-            accumulatedText = "আমি ShiPu AI"
+            partialText = "আমি ShiPu AI"
         )
-        assertEquals("আমি ShiPu AI", stateStreaming.accumulatedText)
+        assertEquals("আমি ShiPu AI", stateStreaming.partialText)
         assertEquals(GenerationStatus.STREAMING, stateStreaming.status)
 
         val stateCompleted = stateStreaming.copy(status = GenerationStatus.COMPLETED)
@@ -33,17 +32,21 @@ class StreamingReliabilityTest {
 
     @Test
     fun testErrorClassification() {
-        val networkError = StreamEvent.Error(
-            errorType = GenerationErrorType.NETWORK_ERROR,
-            message = "Connection reset by peer",
+        val networkError = StreamEvent.StreamFailed(
+            generationId = "gen_1",
+            partialContent = "",
+            errorType = GenerationErrorType.NETWORK_UNAVAILABLE,
+            errorMessage = "Connection reset by peer",
             isRetryable = true
         )
         assertTrue(networkError.isRetryable)
-        assertEquals(GenerationErrorType.NETWORK_ERROR, networkError.errorType)
+        assertEquals(GenerationErrorType.NETWORK_UNAVAILABLE, networkError.errorType)
 
-        val authError = StreamEvent.Error(
-            errorType = GenerationErrorType.AUTHENTICATION_ERROR,
-            message = "Invalid API key",
+        val authError = StreamEvent.StreamFailed(
+            generationId = "gen_2",
+            partialContent = "",
+            errorType = GenerationErrorType.AUTHENTICATION_FAILED,
+            errorMessage = "Invalid API key",
             isRetryable = false
         )
         assertFalse(authError.isRetryable)
